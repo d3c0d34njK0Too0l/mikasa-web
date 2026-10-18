@@ -4,17 +4,16 @@ import { useState } from "react";
 export default function Home() {
   const [activeTab, setActiveTab] = useState("spam");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState(null);
   
   const [target, setTarget] = useState("");
   const [senderId, setSenderId] = useState("");
   const [bugType, setBugType] = useState("verload");
 
-  // GUE UDAH MASUKIN LINK CLOUDFLARE DAN API KEY LO DI SINI
   const API_URL = "https://veterans-stations-subsidiaries-g-radially.trycloudflare.com";
   const API_KEY = "rahasia_banget_123";
 
-  const handleRequest = async (endpoint: string, payload: any) => {
+  const handleRequest = async (endpoint, payload) => {
     setLoading(true);
     setResult(null);
     try {
@@ -28,7 +27,7 @@ export default function Home() {
       });
       const data = await res.json();
       setResult(data);
-    } catch (e: any) {
+    } catch (e) {
       setResult({ status: false, error: e.message });
     } finally {
       setLoading(false);
