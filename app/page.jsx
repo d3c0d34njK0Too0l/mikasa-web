@@ -12,17 +12,20 @@ import {
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch
 } from "lucide-react";
 
-// IMPORT GAME ENGINE
 import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
 
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
-const VIDEO_1 = "https://j.top4top.io/m_3944kuzbh0.mp4";
-const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
+const VIDEO_1 = "https://j.top4top.io/m_3944kuzbh0.mp4"; 
+const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4"; 
+const INTRO_VIDEO = "https://c.top4top.io/m_39443olav1.mp4";
+const INTRO_AUDIO = "https://l.top4top.io/m_3944pw6n51.mp3";
+const SOUND_1 = "https://b.top4top.io/m_39442c6f31.m4a";
+const SOUND_2 = "https://k.top4top.io/m_3944rcsvx1.mp3";
 
 let globalAudio = null;
+let bgmAudio = null;
 
-// SEMUA TOOLS (PAKE LUCIDE ICONS & WARNA)
 const ALL_TOOLS = [
   { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500", bg: "border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]" },
   { id: 'spamcall', name: "Spam Call", sub: "Bomb Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Phone, color: "text-red-500", bg: "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]" },
@@ -30,22 +33,18 @@ const ALL_TOOLS = [
   { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500", bg: "border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]" },
   { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500", bg: "border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.3)]" },
   { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400", bg: "border-blue-400/50 shadow-[0_0_10px_rgba(96,165,250,0.3)]" },
-  
   { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500", bg: "border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]" },
   { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500", bg: "border-teal-500/50 shadow-[0_0_10px_rgba(20,184,166,0.3)]" },
   { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500", bg: "border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]" },
   { id: 'portscan', name: "Port Scan", sub: "Scan Port", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Server, color: "text-violet-500", bg: "border-violet-500/50 shadow-[0_0_10px_rgba(139,92,246,0.3)]" },
   { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500", bg: "border-fuchsia-500/50 shadow-[0_0_10px_rgba(217,70,239,0.3)]" },
   { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500", bg: "border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]" },
-  
   { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", bg: "border-red-600/50 shadow-[0_0_10px_rgba(220,38,38,0.3)]", extra: {type: "verload"} },
   { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", bg: "border-orange-600/50 shadow-[0_0_10px_rgba(234,88,12,0.3)]", extra: {type: "forceclose"} },
   { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", bg: "border-rose-600/50 shadow-[0_0_10px_rgba(225,29,72,0.3)]", extra: {type: "crashcalls"} },
-  
   { id: 'tt', name: "TikTok DL", sub: "Unduh Video", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400", bg: "border-pink-400/50 shadow-[0_0_10px_rgba(244,114,182,0.3)]" },
   { id: 'ig', name: "IG DL", sub: "Unduh Foto", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400", bg: "border-purple-400/50 shadow-[0_0_10px_rgba(192,132,252,0.3)]" },
   { id: 'fb', name: "FB DL", sub: "Unduh Video", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600", bg: "border-blue-600/50 shadow-[0_0_10px_rgba(37,99,235,0.3)]" },
-  
   { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500", bg: "border-lime-500/50 shadow-[0_0_10px_rgba(132,204,22,0.3)]" },
   { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500", bg: "border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]" },
   { id: 'cekff', name: "Cek FF", sub: "Nickname FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500", bg: "border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)]" },
@@ -58,6 +57,7 @@ const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showIntro, setShowIntro] = useState(false); 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -70,11 +70,11 @@ export default function Home() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMusicLibrary, setShowMusicLibrary] = useState(false);
 
-  // Time & Runtime State
+  const [videoIndex, setVideoIndex] = useState(0);
+
   const [currentTime, setCurrentTime] = useState("");
   const [runtime, setRuntime] = useState("00:00");
 
-  // Socket & Chat State
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [globalMsgs, setGlobalMsgs] = useState([]);
@@ -83,29 +83,27 @@ export default function Home() {
   const [chatTarget, setChatTarget] = useState(null); 
   const [privateMsgs, setPrivateMsgs] = useState([]);
 
-  // Tool State
   const [toolCategory, setToolCategory] = useState("Semua");
   const [activeTool, setActiveTool] = useState(null); 
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
   const [toolLoading, setToolLoading] = useState(false);
   
-  // Sender State
+  // SENDER STATE
   const [senderActive, setSenderActive] = useState(false);
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [senderNumber, setSenderNumber] = useState("");
+  const [senderCode, setSenderCode] = useState("");
+  const [senderLoading, setSenderLoading] = useState(false);
 
-  // Game State
   const [activeGame, setActiveGame] = useState(null); 
 
-  // Music State
   const [musicSearch, setMusicSearch] = useState("");
   const [musicResults, setMusicResults] = useState([]);
   const [loadingMusic, setLoadingMusic] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // --- AUTO LOGIN & CLOCK ---
   useEffect(() => {
     const savedUser = localStorage.getItem("mikasa_user");
     if (savedUser) {
@@ -127,6 +125,23 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  // AUTOPLAY BGM SETELAH INTRO
+  useEffect(() => {
+    if (isLoggedIn) {
+      bgmAudio = new Audio(SOUND_1);
+      bgmAudio.play().catch(e => console.log("Autoplay blocked"));
+      
+      bgmAudio.onended = () => {
+        bgmAudio = new Audio(SOUND_2);
+        bgmAudio.loop = true;
+        bgmAudio.play().catch(e => console.log("Autoplay blocked"));
+      };
+    }
+    return () => {
+      if (bgmAudio) bgmAudio.pause();
+    };
+  }, [isLoggedIn]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError("");
@@ -141,13 +156,18 @@ export default function Home() {
         const profile = { name: username, avatar: "", expired: "2054-02-25" };
         setUserProfile(profile);
         localStorage.setItem("mikasa_user", JSON.stringify({ username, role, profile }));
-        setIsLoggedIn(true);
+        setShowIntro(true);
       } else {
         setLoginError("Akun tidak ditemukan.");
       }
     } catch (err) {
       setLoginError("Gagal terhubung ke database.");
     }
+  };
+
+  const handleSkipIntro = () => {
+    setShowIntro(false);
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
@@ -159,9 +179,8 @@ export default function Home() {
     if(socket) socket.close();
   };
 
-  // --- SOCKET CHAT ---
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && !showIntro) {
       const newSocket = io(API_URL);
       setSocket(newSocket);
       
@@ -181,7 +200,7 @@ export default function Home() {
       
       return () => newSocket.close();
     }
-  }, [isLoggedIn, username]);
+  }, [isLoggedIn, showIntro, username]);
 
   const sendGlobalMsg = (e) => {
     e.preventDefault();
@@ -205,7 +224,6 @@ export default function Home() {
     setActiveTab("chat");
   };
 
-  // --- MUSIC LOGIC ---
   const handleSearchMusic = async (e) => {
     if (e) e.preventDefault();
     if (!musicSearch.trim()) return;
@@ -235,6 +253,10 @@ export default function Home() {
 
   const playMusic = (track) => {
     if (!track.previewUrl) return alert("Lagu tidak ada preview.");
+    
+    // STOP BGM KALAU USER PLAY MUSIC
+    if (bgmAudio) bgmAudio.pause(); 
+    
     if (currentSong?.trackId === track.trackId) { togglePlay(); return; }
     if (globalAudio) { globalAudio.pause(); globalAudio.currentTime = 0; }
     globalAudio = new Audio(track.previewUrl);
@@ -244,7 +266,6 @@ export default function Home() {
     setIsPlaying(true);
   };
 
-  // --- PROFILE EDIT ---
   const handleSaveProfile = (e) => {
     e.preventDefault();
     const updatedProfile = { ...userProfile };
@@ -264,7 +285,6 @@ export default function Home() {
     }
   };
 
-  // --- DYNAMIC TOOL EXECUTE ---
   const executeTool = async () => {
     if (!activeTool || !toolTarget) return;
     setToolLoading(true);
@@ -289,13 +309,46 @@ export default function Home() {
     }
   };
 
-  const handleSenderSave = () => {
+  // FUNGSI SENDER REAL (NEMBAK API PAIRING)
+  const handleSenderPairing = async () => {
     if(senderNumber.length < 10) return alert("Nomor gak valid");
-    setSenderActive(true);
-    setShowSenderModal(false);
+    setSenderLoading(true);
+    setSenderCode("");
+    try {
+      const res = await fetch(`${API_URL}/api/pairing`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify({ nomor: senderNumber, userId: username })
+      });
+      const data = await res.json();
+      if(data.code) {
+         setSenderCode(data.code);
+         setSenderActive(true);
+      } else {
+         alert(data.error || "Gagal dapet kode pairing");
+      }
+    } catch (err) {
+      alert("Gagal konek ke server Pterodactyl.");
+    } finally {
+      setSenderLoading(false);
+    }
   };
 
   // --- RENDERS ---
+  if (showIntro) {
+    return (
+      <div className="min-h-screen bg-black relative flex items-center justify-center">
+        <video autoPlay muted playsInline className="w-full h-full object-cover absolute inset-0" onEnded={handleSkipIntro}>
+          <source src={INTRO_VIDEO} type="video/mp4" />
+        </video>
+        <audio autoPlay><source src={INTRO_AUDIO} type="audio/mpeg" /></audio>
+        <button onClick={handleSkipIntro} className="absolute top-6 right-6 bg-transparent border border-white/50 text-white px-5 py-2 rounded-full text-sm font-bold z-50 hover:bg-white/20 transition-all">
+          Skip ➔
+        </button>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#0f0a15] flex flex-col items-center justify-center p-4">
@@ -340,10 +393,8 @@ export default function Home() {
     </>
   );
 
-  // --- MODAL PROFILE ---
   const renderProfileModal = () => {
     if (!showProfileModal) return null; 
-
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
@@ -411,20 +462,22 @@ export default function Home() {
         <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
           <button onClick={() => setShowSenderModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
           <h2 className="text-white font-bold text-lg mb-2">Sender WhatsApp</h2>
-          <p className="text-xs text-zinc-400 mb-4">Masukkan nomor WA lu untuk Bug WA. (Pastikan udah pairing di bot Pterodactyl).</p>
+          <p className="text-xs text-zinc-400 mb-4">Masukkan nomor WA lu, lalu klik Pairing untuk dapet kode.</p>
           
           <div className="space-y-4">
             <div>
               <label className="text-xs text-zinc-400 block mb-1">Nomor WhatsApp</label>
-              <input 
-                type="text" 
-                value={senderNumber} 
-                onChange={(e) => setSenderNumber(e.target.value)} 
-                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" 
-                placeholder="628xxx" 
-              />
+              <input type="text" value={senderNumber} onChange={(e) => setSenderNumber(e.target.value)} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" placeholder="628xxx" />
             </div>
-            <button onClick={handleSenderSave} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg">Simpan Sender</button>
+            <button onClick={handleSenderPairing} disabled={senderLoading} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
+              {senderLoading ? <Loader2 className="animate-spin" size={20}/> : "Minta Pairing Code"}
+            </button>
+            {senderCode && (
+              <div className="mt-4 bg-black border border-zinc-700 p-4 rounded-lg text-center">
+                <p className="text-xs text-zinc-400 mb-1">Masukkan Kode Ini di WA:</p>
+                <p className="text-2xl font-bold text-green-400 tracking-widest">{senderCode}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -434,7 +487,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
-      {/* HEADER */}
       <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800">
         <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2">
           <Menu size={24} />
@@ -452,7 +504,6 @@ export default function Home() {
       {renderToolModal()}
       {renderSenderModal()}
 
-      {/* RENDER GAME MODALS */}
       {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
       {activeGame === 'uno' && <GameUno onClose={() => setActiveGame(null)} />}
       {activeGame === 'ular' && <GameUlarTangga onClose={() => setActiveGame(null)} />}
@@ -461,10 +512,8 @@ export default function Home() {
 
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
         
-        {/* TAB HOME */}
         {activeTab === "home" && (
           <>
-            {/* KARTU JAM */}
             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
               <div className="inline-block bg-zinc-700/50 border border-zinc-600 text-zinc-300 text-[10px] font-bold px-3 py-1 rounded-full mb-4 tracking-widest">
@@ -489,7 +538,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* REAL-TIME USER LIST */}
             <div>
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-xs font-bold text-zinc-400 tracking-wider">PENGGUNA ONLINE</h3>
@@ -515,7 +563,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 3 TOMBOL BARIS */}
             <div className="grid grid-cols-3 gap-2">
               <button onClick={() => { setChatMode("global"); setActiveTab("chat"); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
                 <MessageSquare size={20} className="text-white" />
@@ -531,7 +578,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* MUSIC PLAYER */}
             <div>
               <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
               <div onClick={() => setShowMusicLibrary(true)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-zinc-500 transition-all">
@@ -550,14 +596,20 @@ export default function Home() {
               </div>
             </div>
 
-            {/* VIDEO BANNER */}
             <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
-              <video autoPlay muted loop playsInline className="w-full h-full object-cover">
-                <source src={VIDEO_2} type="video/mp4" />
+              <video 
+                key={videoIndex} 
+                autoPlay 
+                muted 
+                playsInline 
+                className="w-full h-full object-cover" 
+                onEnded={() => setVideoIndex(1)}
+                loop={videoIndex === 1}
+              >
+                <source src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} type="video/mp4" />
               </video>
             </div>
 
-            {/* STATISTIK AKUN */}
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-zinc-400"/> Statistik Akun</h3>
               <div className="grid grid-cols-3 gap-2">
@@ -579,11 +631,9 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ALL TOOLS (DENGAN DESAIN LUCIDE CARD) */}
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Semua Fitur</h3>
               
-              {/* Sender Button (Khusus Bug WA) */}
               <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield size={18} className={senderActive ? "text-green-500" : "text-red-500"} />
@@ -595,7 +645,6 @@ export default function Home() {
                 <button onClick={() => setShowSenderModal(true)} className="bg-zinc-800 px-3 py-1 rounded-lg text-xs text-white">{senderActive ? "Ganti" : "Hubungkan"}</button>
               </div>
 
-              {/* Filter Kategori Tools */}
               <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-2">
                 {CATEGORIES.map((cat) => (
                   <button key={cat} onClick={() => setToolCategory(cat)} className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${toolCategory === cat ? 'bg-zinc-600 text-white' : 'bg-[#1c1c1e] text-zinc-400 border border-zinc-700'}`}>
@@ -604,15 +653,12 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Grid Tools (Desain Baru) */}
               <div className="grid grid-cols-2 gap-3">
                 {ALL_TOOLS.filter(t => toolCategory === "Semua" || t.cat === toolCategory).map((tool) => (
                   <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-3 flex items-center gap-3 hover:bg-zinc-800 transition-colors text-left">
-                    {/* Icon Wrapper */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border bg-black/30 ${tool.bg}`}>
                       <tool.icon size={20} className={tool.color} />
                     </div>
-                    {/* Text */}
                     <div className="flex flex-col">
                       <span className="text-xs text-white font-bold">{tool.name}</span>
                       <span className="text-[9px] text-zinc-500">{tool.sub}</span>
@@ -624,7 +670,6 @@ export default function Home() {
           </>
         )}
 
-        {/* TAB CHAT (FIXED KEYBOARD OVERLAY) */}
         {activeTab === "chat" && (
           <div className="fixed inset-0 bg-[#0f0a15] z-40 flex flex-col h-[100dvh]">
             <div className="bg-[#0f0a15]/90 backdrop-blur-md flex items-center px-4 border-b border-zinc-800 pt-4 pb-2 shrink-0">
@@ -656,7 +701,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* TAB GAMES */}
         {activeTab === "games" && (
           <div>
             <button onClick={() => setActiveTab("home")} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Home</button>
@@ -678,7 +722,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* TAB SETTINGS (FIXED) */}
         {activeTab === "settings" && (
           <div className="space-y-4">
              <h2 className="text-white font-bold text-xl mb-4">Settings</h2>
@@ -700,7 +743,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* BOTTOM NAVBAR */}
       <div className="fixed bottom-0 w-full bg-[#1c1c1e] border-t border-zinc-700 p-2 z-30">
         <div className="flex justify-around items-center px-2">
            {[
@@ -716,7 +758,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* MUSIC LIBRARY MODAL */}
       {showMusicLibrary && (
         <div className="fixed inset-0 bg-[#0f0a15] z-50 flex flex-col p-4 h-[100dvh]">
           <div className="flex items-center gap-3 mb-6 shrink-0">
