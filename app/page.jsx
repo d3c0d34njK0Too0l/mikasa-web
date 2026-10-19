@@ -9,7 +9,8 @@ import {
   Dices, Bot, Grid3X3, Crown, CircleDollarSign, Users, 
   Puzzle, Globe2, Loader2, LogOut, Settings, Camera,
   Clock, Shield, Phone, Terminal, Link, Mail, MapPin, 
-  CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch
+  CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
+  PlayCircle, Database
 } from "lucide-react";
 
 import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
@@ -23,34 +24,39 @@ const INTRO_AUDIO = "https://l.top4top.io/m_3944pw6n51.mp3";
 const SOUND_1 = "https://b.top4top.io/m_39442c6f31.m4a";
 const SOUND_2 = "https://k.top4top.io/m_3944rcsvx1.mp3";
 
-let globalAudio = null;
-let bgmAudio = null;
+let globalAudio = null; 
+let bgmAudio = null;    
 
 const ALL_TOOLS = [
-  { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500", bg: "border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]" },
-  { id: 'spamcall', name: "Spam Call", sub: "Bomb Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Phone, color: "text-red-500", bg: "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]" },
-  { id: 'spampair', name: "Spam Pair", sub: "Bomb Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Link, color: "text-orange-500", bg: "border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)]" },
-  { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500", bg: "border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]" },
-  { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500", bg: "border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.3)]" },
-  { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400", bg: "border-blue-400/50 shadow-[0_0_10px_rgba(96,165,250,0.3)]" },
-  { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500", bg: "border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]" },
-  { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500", bg: "border-teal-500/50 shadow-[0_0_10px_rgba(20,184,166,0.3)]" },
-  { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500", bg: "border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]" },
-  { id: 'portscan', name: "Port Scan", sub: "Scan Port", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Server, color: "text-violet-500", bg: "border-violet-500/50 shadow-[0_0_10px_rgba(139,92,246,0.3)]" },
-  { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500", bg: "border-fuchsia-500/50 shadow-[0_0_10px_rgba(217,70,239,0.3)]" },
-  { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500", bg: "border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]" },
-  { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", bg: "border-red-600/50 shadow-[0_0_10px_rgba(220,38,38,0.3)]", extra: {type: "verload"} },
-  { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", bg: "border-orange-600/50 shadow-[0_0_10px_rgba(234,88,12,0.3)]", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", bg: "border-rose-600/50 shadow-[0_0_10px_rgba(225,29,72,0.3)]", extra: {type: "crashcalls"} },
-  { id: 'tt', name: "TikTok DL", sub: "Unduh Video", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400", bg: "border-pink-400/50 shadow-[0_0_10px_rgba(244,114,182,0.3)]" },
-  { id: 'ig', name: "IG DL", sub: "Unduh Foto", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400", bg: "border-purple-400/50 shadow-[0_0_10px_rgba(192,132,252,0.3)]" },
-  { id: 'fb', name: "FB DL", sub: "Unduh Video", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600", bg: "border-blue-600/50 shadow-[0_0_10px_rgba(37,99,235,0.3)]" },
-  { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500", bg: "border-lime-500/50 shadow-[0_0_10px_rgba(132,204,22,0.3)]" },
-  { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500", bg: "border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]" },
-  { id: 'cekff', name: "Cek FF", sub: "Nickname FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500", bg: "border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)]" },
-  { id: 'cekroblox', name: "Cek Roblox", sub: "Nickname Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", icon: Gamepad2, color: "text-red-400", bg: "border-red-400/50 shadow-[0_0_10px_rgba(248,113,113,0.3)]" },
-  { id: 'gtk', name: "Data GTK", sub: "Cari Guru", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", icon: Users, color: "text-sky-500", bg: "border-sky-500/50 shadow-[0_0_10px_rgba(14,165,233,0.3)]" },
-  { id: 'cekbandwa', name: "Cek Band", sub: "Status WA", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", icon: Ban, color: "text-red-700", bg: "border-red-700/50 shadow-[0_0_10px_rgba(185,28,28,0.3)]" },
+  { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", desc: "Mengirim spam OTP massal ke nomor target.", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500" },
+  { id: 'spamcall', name: "Spam Call", sub: "Bomb Call", desc: "Melakukan panggilan spam ke nomor target.", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Phone, color: "text-red-500" },
+  { id: 'spampair', name: "Spam Pair", sub: "Bomb Pairing", desc: "Mengirim permintaan pairing WhatsApp massal.", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Link, color: "text-orange-500" },
+  { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", desc: "Mengirim pesan anonim massal ke akun NGL.", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500" },
+  { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", desc: "Mengirim laporan spam ke WhatsApp.", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500" },
+  { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", desc: "Mengirim spam email ke alamat target.", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400" },
+  
+  { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", desc: "Melacak informasi dari nomor HP target.", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500" },
+  { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", desc: "Melacak akun media sosial berdasarkan username.", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500" },
+  { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", desc: "Melacak lokasi dan info dari alamat IP.", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500" },
+  { id: 'portscan', name: "Port Scan", sub: "Scan Port", desc: "Memindai port terbuka pada domain target.", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Server, color: "text-violet-500" },
+  { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", desc: "Membaca informasi dari nomor NIK.", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500" },
+  { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", desc: "Mengecek kepemilikan e-wallet dari nomor.", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500" },
+  { id: 'doxschool', name: "DoxSchool", sub: "Dump Data", desc: "Dump database sekolah berdasarkan NPSN.", endpoint: "/api/doxschool", payload: "npsn", placeholder: "8 digit NPSN", cat: "OSINT", icon: Database, color: "text-amber-500" },
+  
+  { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
+  { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
+  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashcalls"} },
+  
+  { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
+  { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
+  { id: 'fb', name: "FB DL", sub: "Unduh Video", desc: "Mengunduh video dari link Facebook.", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600" },
+  
+  { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", desc: "Mencari informasi wilayah dari kode pos.", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500" },
+  { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", desc: "Mencari data sekolah berdasarkan NPSN.", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500" },
+  { id: 'cekff', name: "Cek FF", sub: "Nickname FF", desc: "Mengecek nickname Free Fire dari UID.", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500" },
+  { id: 'cekroblox', name: "Cek Roblox", sub: "Nickname Roblox", desc: "Mengecek profil Roblox dari username.", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", icon: Gamepad2, color: "text-red-400" },
+  { id: 'gtk', name: "Data GTK", sub: "Cari Guru", desc: "Mencari data guru berdasarkan nama/NUPTK.", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", icon: Users, color: "text-sky-500" },
+  { id: 'cekbandwa', name: "Cek Band", sub: "Status WA", desc: "Mengecek status band nomor WhatsApp.", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", icon: Ban, color: "text-red-700" },
 ];
 
 const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
@@ -58,6 +64,8 @@ const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false); 
+  const [showTapToPlay, setShowTapToPlay] = useState(false); 
+  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -69,9 +77,7 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMusicLibrary, setShowMusicLibrary] = useState(false);
-
   const [videoIndex, setVideoIndex] = useState(0);
-
   const [currentTime, setCurrentTime] = useState("");
   const [runtime, setRuntime] = useState("00:00");
 
@@ -84,12 +90,12 @@ export default function Home() {
   const [privateMsgs, setPrivateMsgs] = useState([]);
 
   const [toolCategory, setToolCategory] = useState("Semua");
-  const [activeTool, setActiveTool] = useState(null); 
+  const [activeTool, setActiveTool] = useState(null); // State buat halaman tools
+  
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
   const [toolLoading, setToolLoading] = useState(false);
   
-  // SENDER STATE
   const [senderActive, setSenderActive] = useState(false);
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [senderNumber, setSenderNumber] = useState("");
@@ -104,6 +110,18 @@ export default function Home() {
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  const startBGM = () => {
+    if (bgmAudio) return; 
+    bgmAudio = new Audio(SOUND_1);
+    bgmAudio.play().then(() => {
+      bgmAudio.onended = () => {
+        bgmAudio = new Audio(SOUND_2);
+        bgmAudio.loop = true;
+        bgmAudio.play().catch(e => console.log(e));
+      };
+    }).catch(e => console.log("Autoplay blocked:", e));
+  };
+
   useEffect(() => {
     const savedUser = localStorage.getItem("mikasa_user");
     if (savedUser) {
@@ -112,6 +130,7 @@ export default function Home() {
       setUserRole(parsed.role);
       setUserProfile(parsed.profile || { name: parsed.username, avatar: "", expired: "2054-02-25" });
       setIsLoggedIn(true);
+      setShowTapToPlay(true); 
     }
 
     const timer = setInterval(() => {
@@ -124,23 +143,6 @@ export default function Home() {
 
     return () => clearInterval(timer);
   }, []);
-
-  // AUTOPLAY BGM SETELAH INTRO
-  useEffect(() => {
-    if (isLoggedIn) {
-      bgmAudio = new Audio(SOUND_1);
-      bgmAudio.play().catch(e => console.log("Autoplay blocked"));
-      
-      bgmAudio.onended = () => {
-        bgmAudio = new Audio(SOUND_2);
-        bgmAudio.loop = true;
-        bgmAudio.play().catch(e => console.log("Autoplay blocked"));
-      };
-    }
-    return () => {
-      if (bgmAudio) bgmAudio.pause();
-    };
-  }, [isLoggedIn]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -168,6 +170,13 @@ export default function Home() {
   const handleSkipIntro = () => {
     setShowIntro(false);
     setIsLoggedIn(true);
+    startBGM(); 
+    setShowTapToPlay(false); 
+  };
+
+  const handleTapToPlay = () => {
+    startBGM();
+    setShowTapToPlay(false);
   };
 
   const handleLogout = () => {
@@ -177,27 +186,18 @@ export default function Home() {
     setPassword("");
     setIsSidebarOpen(false);
     if(socket) socket.close();
+    if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
+    if(globalAudio) { globalAudio.pause(); globalAudio = null; }
   };
 
   useEffect(() => {
     if (isLoggedIn && !showIntro) {
       const newSocket = io(API_URL);
       setSocket(newSocket);
-      
       newSocket.emit('user_online', username);
-      
-      newSocket.on('update_online_users', (users) => {
-        setOnlineUsers(users.filter(u => u !== username));
-      });
-
-      newSocket.on('receive_global_msg', (data) => {
-        setGlobalMsgs((prev) => [...prev, data]);
-      });
-
-      newSocket.on('receive_private_msg', (data) => {
-        setPrivateMsgs((prev) => [...prev, data]);
-      });
-      
+      newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
+      newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
+      newSocket.on('receive_private_msg', (data) => setPrivateMsgs((prev) => [...prev, data]));
       return () => newSocket.close();
     }
   }, [isLoggedIn, showIntro, username]);
@@ -253,10 +253,7 @@ export default function Home() {
 
   const playMusic = (track) => {
     if (!track.previewUrl) return alert("Lagu tidak ada preview.");
-    
-    // STOP BGM KALAU USER PLAY MUSIC
-    if (bgmAudio) bgmAudio.pause(); 
-    
+    if (bgmAudio) { bgmAudio.pause(); bgmAudio = null; } 
     if (currentSong?.trackId === track.trackId) { togglePlay(); return; }
     if (globalAudio) { globalAudio.pause(); globalAudio.currentTime = 0; }
     globalAudio = new Audio(track.previewUrl);
@@ -294,6 +291,11 @@ export default function Home() {
     if (activeTool.extra) Object.assign(payloadBody, activeTool.extra);
     payloadBody[activeTool.payload] = toolTarget;
 
+    if (activeTool.id === 'spamgmail') {
+        payloadBody.email = toolTarget;
+        payloadBody.message = "Pesan spam dari Mikasa Web"; 
+    }
+
     try {
       const res = await fetch(`${API_URL}${activeTool.endpoint}`, {
         method: "POST",
@@ -309,7 +311,6 @@ export default function Home() {
     }
   };
 
-  // FUNGSI SENDER REAL (NEMBAK API PAIRING)
   const handleSenderPairing = async () => {
     if(senderNumber.length < 10) return alert("Nomor gak valid");
     setSenderLoading(true);
@@ -377,6 +378,88 @@ export default function Home() {
     );
   }
 
+  // --- HALAMAN TOOLS (BUKAN POPUP LAGI) ---
+  if (activeTool) {
+    return (
+      <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
+        <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800">
+          <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="text-white p-2">
+            <ChevronLeft size={24} />
+          </button>
+          <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">{activeTool.name}</h1>
+        </header>
+
+        <main className="px-4 max-w-md mx-auto mt-2 space-y-4">
+          {/* HEADER JAM */}
+          <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-white text-2xl font-bold leading-tight mb-2">{activeTool.name}</h2>
+                <div className="flex gap-2">
+                  <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300">
+                    <Shield size={12} /> {userRole}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-zinc-600 bg-zinc-800/50 shadow-inner">
+                <span className="text-white text-2xl font-bold">{currentTime}</span>
+                <span className="text-[9px] text-zinc-400 tracking-widest mt-1">WAKTU</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 TOMBOL BARIS */}
+          <div className="grid grid-cols-3 gap-2">
+            <button onClick={() => { setChatMode("global"); setActiveTab("chat"); setActiveTool(null); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
+              <MessageSquare size={20} className="text-white" />
+              <span className="text-white text-xs font-bold">Global Chat</span>
+            </button>
+            <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="bg-zinc-700 hover:bg-zinc-600 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-zinc-900/20">
+              <ChevronLeft size={20} className="text-white" />
+              <span className="text-white text-xs font-bold">Kembali</span>
+            </button>
+            <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20">
+              <Phone size={20} className="text-white" />
+              <span className="text-white text-xs font-bold">Developer</span>
+            </a>
+          </div>
+
+          {/* KOTAK INFO FUNGSI */}
+          <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
+            <h3 className="text-white font-bold text-sm mb-2 flex items-center gap-2">
+              <activeTool.icon size={16} className={activeTool.color} /> Info Fitur
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              {activeTool.desc}
+            </p>
+          </div>
+
+          {/* INPUT & EKSEKUSI */}
+          <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
+            <label className="text-xs text-zinc-400 block mb-2">Target / Input</label>
+            <input 
+              type="text" 
+              value={toolTarget} 
+              onChange={(e) => setToolTarget(e.target.value)} 
+              className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white mb-4" 
+              placeholder={activeTool.placeholder || "Masukkan target..."} 
+            />
+            <button onClick={executeTool} disabled={toolLoading} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
+              {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
+            </button>
+            {toolResult && (
+              <div className="mt-4 bg-black border border-zinc-700 p-3 rounded-lg max-h-40 overflow-y-auto">
+                <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap">{JSON.stringify(toolResult, null, 2)}</pre>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // --- HALAMAN UTAMA (HOME) ---
   const renderSidebar = () => (
     <>
       <div className={`fixed inset-0 bg-black/60 z-40 transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)} />
@@ -422,39 +505,6 @@ export default function Home() {
     );
   };
 
-  const renderToolModal = () => {
-    if (!activeTool) return null;
-    return (
-      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
-          <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
-          <h2 className="text-white font-bold text-lg mb-4">{activeTool.name}</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-zinc-400 block mb-1">Target / Input</label>
-              <input 
-                type="text" 
-                value={toolTarget} 
-                onChange={(e) => setToolTarget(e.target.value)} 
-                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" 
-                placeholder={activeTool.placeholder || "Masukkan target..."} 
-              />
-            </div>
-            <button onClick={executeTool} disabled={toolLoading} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
-              {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
-            </button>
-            {toolResult && (
-              <div className="mt-4 bg-black border border-zinc-700 p-3 rounded-lg max-h-40 overflow-y-auto">
-                <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap">{JSON.stringify(toolResult, null, 2)}</pre>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderSenderModal = () => {
     if (!showSenderModal) return null;
     return (
@@ -463,7 +513,6 @@ export default function Home() {
           <button onClick={() => setShowSenderModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
           <h2 className="text-white font-bold text-lg mb-2">Sender WhatsApp</h2>
           <p className="text-xs text-zinc-400 mb-4">Masukkan nomor WA lu, lalu klik Pairing untuk dapet kode.</p>
-          
           <div className="space-y-4">
             <div>
               <label className="text-xs text-zinc-400 block mb-1">Nomor WhatsApp</label>
@@ -487,6 +536,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
+      {showTapToPlay && (
+        <div onClick={handleTapToPlay} className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer">
+          <PlayCircle size={80} className="text-zinc-500 mb-6 animate-pulse" />
+          <h2 className="text-white text-xl font-bold mb-2">Ketuk Layar untuk Mulai</h2>
+          <p className="text-zinc-400 text-sm">Untuk mengaktifkan suara & BGM</p>
+        </div>
+      )}
+
       <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800">
         <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2">
           <Menu size={24} />
@@ -501,7 +558,6 @@ export default function Home() {
 
       {renderSidebar()}
       {renderProfileModal()}
-      {renderToolModal()}
       {renderSenderModal()}
 
       {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
@@ -656,8 +712,8 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-3">
                 {ALL_TOOLS.filter(t => toolCategory === "Semua" || t.cat === toolCategory).map((tool) => (
                   <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-3 flex items-center gap-3 hover:bg-zinc-800 transition-colors text-left">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border bg-black/30 ${tool.bg}`}>
-                      <tool.icon size={20} className={tool.color} />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border bg-black/30 ${tool.color} border-zinc-600`}>
+                      <tool.icon size={20} />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs text-white font-bold">{tool.name}</span>
