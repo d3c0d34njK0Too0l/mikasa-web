@@ -7,8 +7,8 @@ import {
   Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
   MessageSquare, Bell, Plus, Heart, Calendar, Wrench, 
   DownloadCloud, Search, Bug, Send, X, ChevronLeft, 
-  ShieldAlert, Globe, Smartphone, FileText, Play, Pause, Gamepad2, Music, CheckCircle2,
-  Dices, Bot, Grid3X3, Crown, CircleDollarSign, Users, Puzzle, Globe2, CreditCard, Mail, QrCode, ScanLine, Database, Link
+  ShieldAlert, Globe, Smartphone, FileText, Play, Pause, Gamepad2, Music, 
+  Dices, Bot, Grid3X3, Crown, CircleDollarSign, Users, Puzzle, Globe2, CreditCard, Link, ScanLine, Mail
 } from "lucide-react";
 
 const API_URL = "https://api-mikasacloud.my.id";
@@ -22,11 +22,14 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   
-  // Login & App State
+  // Login State
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [userRole, setUserRole] = useState("FREE");
+  
+  // App State
   const [activeTab, setActiveTab] = useState("home");
   const [selectedTool, setSelectedTool] = useState(null);
   const [activeGame, setActiveGame] = useState(null); 
@@ -37,10 +40,17 @@ export default function Home() {
   const [globalMsgs, setGlobalMsgs] = useState([]);
   const [msgInput, setMsgInput] = useState("");
   
+  // Video Banner
+  const [videoIndex, setVideoIndex] = useState(0);
+  
   // Tool State
   const [target, setTarget] = useState("");
   const [loadingTools, setLoadingTools] = useState(false);
   const [toolsResult, setToolsResult] = useState(null);
+
+  // Music State
+  const [musicQuery, setMusicQuery] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // --- LOGIKA CATUR ---
   const [chessGame, setChessGame] = useState(new Chess());
@@ -139,7 +149,6 @@ export default function Home() {
 
   // --- LOGIKA DOMINO SEDERHANA ---
   const [dominoPlayer, setDominoPlayer] = useState([]);
-  const [dominoNpc, setDominoNpc] = useState([]);
   const [dominoBoard, setDominoBoard] = useState([]);
   const [dominoMsg, setDominoMsg] = useState("");
 
@@ -150,7 +159,6 @@ export default function Home() {
     }
     deck = deck.sort(() => Math.random() - 0.5);
     setDominoPlayer(deck.slice(0, 7));
-    setDominoNpc(deck.slice(7, 14));
     setDominoBoard([deck[14]]);
     setDominoMsg("Pilih kartu yang ujungnya cocok dengan papan!");
   };
@@ -176,13 +184,14 @@ export default function Home() {
   // --- LOGIN & SOCKET ---
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoginError("");
     try {
       const res = await fetch("https://raw.githubusercontent.com/d3c0d34njK0Too0l/mikasa-web/main/users.json");
       const users = await res.json();
       const validUser = users.find(u => u.username === username && u.password === password);
       if (validUser) { setUserRole(validUser.role ? validUser.role.toUpperCase() : "FREE"); setShowIntro(true); }
       else { setLoginError("Akun tidak ditemukan."); }
-    } catch (err) { setLoginError("Gagal terhubung."); }
+    } catch (err) { setLoginError("Gagal terhubung ke database."); }
   };
 
   useEffect(() => {
@@ -227,14 +236,24 @@ export default function Home() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#0d0914] flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold text-white tracking-widest mb-8">MIKASA LOGIN</h1>
-        <div className="bg-[#16111e] p-6 rounded-2xl w-full max-w-sm border border-[#2a2136]">
-           {loginError && <div className="text-red-500 text-xs mb-2">{loginError}</div>}
-           <form onSubmit={handleLogin} className="space-y-4">
-             <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#0d0914] border border-[#2a2136] p-3 rounded text-white" />
-             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0d0914] border border-[#2a2136] p-3 rounded text-white" />
-             <button type="submit" className="w-full bg-purple-600 p-3 rounded text-white font-bold">Login</button>
-           </form>
+        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-purple-500 mb-4 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+          <img src="https://i.pinimg.com/736x/8c/7d/2c/8c7d2c6d8e3b5f1d2e3c4b5a6f7e8d9c.jpg" alt="Logo" className="w-full h-full object-cover" />
+        </div>
+        <h1 className="text-2xl font-bold text-white tracking-widest mb-8">MIKASA PROJECT</h1>
+        <div className="bg-[#16111e] p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-[#2a2136]">
+          <div className="flex flex-col items-center mb-6"><div className="h-1 w-12 bg-purple-500 rounded-full mb-2"></div><h2 className="text-xl font-bold text-white">Login</h2></div>
+          {loginError && <div className="bg-red-900/50 border border-red-500 text-red-300 text-xs p-2 rounded mb-4 text-center">{loginError}</div>}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="text-xs text-zinc-400 mb-1 block">Username</label>
+              <div className="relative"><User className="absolute left-3 top-3 text-zinc-500" size={18} /><input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#0d0914] border border-[#2a2136] rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-purple-500" placeholder="Username" /></div>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1 block">Password</label>
+              <div className="relative"><Lock className="absolute left-3 top-3 text-zinc-500" size={18} /><input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0d0914] border border-[#2a2136] rounded-lg p-3 pl-10 pr-10 text-white focus:outline-none focus:border-purple-500" placeholder="Password" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-zinc-500 hover:text-white">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
+            </div>
+            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-2">Login <ArrowRight size={18} /></button>
+          </form>
         </div>
       </div>
     );
@@ -329,7 +348,7 @@ export default function Home() {
            <button onClick={() => setActiveGame(null)} className="text-red-400 text-xs font-bold mb-4 self-start">← Keluar</button>
            <Gamepad2 size={48} className="text-purple-500 mb-4"/>
            <h2 className="text-white font-bold text-lg">Papan {activeGame.toUpperCase()}</h2>
-           <p className="text-zinc-500 text-sm mt-2">Segera hadir dengan papan lengkap!</p>
+           <p className="text-zinc-500 text-sm mt-2">Papan {activeGame} akan diupdate minggu depan!</p>
         </div>
       );
     }
@@ -397,7 +416,6 @@ export default function Home() {
     ]
   };
 
-  // --- RENDER HALAMAN LAINNYA ---
   const renderHome = () => (
     <main className="px-4 max-w-md mx-auto space-y-5">
       <div className="w-full h-44 bg-black rounded-2xl overflow-hidden relative">
