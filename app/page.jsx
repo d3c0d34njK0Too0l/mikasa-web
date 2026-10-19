@@ -5,7 +5,8 @@ import {
   Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
   MessageSquare, Bell, Plus, Heart, Calendar, Wrench, 
   DownloadCloud, Search, Bug, Send, X, ChevronLeft, 
-  ShieldAlert, Globe, Smartphone, FileText, Play, Pause, Gamepad2, Music, CheckCircle2
+  ShieldAlert, Globe, Smartphone, FileText, Play, Pause, Gamepad2, Music, CheckCircle2,
+  Dices, Swords, Bot, Grid3X3, Crown, CircleDollarSign, Users, Puzzle, Globe2
 } from "lucide-react";
 
 const API_URL = "https://api-mikasacloud.my.id";
@@ -104,7 +105,7 @@ export default function Home() {
     }
   };
 
-  // --- INTRO VIDEO DENGAN TOMBOL SKIP ---
+  // --- INTRO VIDEO ---
   if (showIntro) {
     return (
       <div className="min-h-screen bg-black relative flex items-center justify-center">
@@ -112,13 +113,7 @@ export default function Home() {
           <source src={INTRO_VIDEO} type="video/mp4" />
         </video>
         <audio autoPlay><source src={INTRO_AUDIO} type="audio/mpeg" /></audio>
-        
-        <button 
-          onClick={() => { setShowIntro(false); setIsLoggedIn(true); }} 
-          className="absolute top-6 right-6 bg-black/60 border border-zinc-600 text-white px-5 py-2 rounded-full text-sm font-bold z-50 backdrop-blur-md shadow-lg hover:bg-black/80 transition-all"
-        >
-          Skip ➔
-        </button>
+        <button onClick={() => { setShowIntro(false); setIsLoggedIn(true); }} className="absolute top-6 right-6 bg-black/60 border border-zinc-600 text-white px-5 py-2 rounded-full text-sm font-bold z-50 backdrop-blur-md shadow-lg hover:bg-black/80 transition-all">Skip ➔</button>
       </div>
     );
   }
@@ -150,47 +145,86 @@ export default function Home() {
     );
   }
 
-  // --- HALAMAN HOME (FITUR LENGKAP) ---
+  // --- DATA GAME ---
+  const gamesList = [
+    { id: "catur", title: "Catur", desc: "Main catur klasik", icon: <Crown size={24} className="text-yellow-400" />, online: true, ai: true },
+    { id: "domino", title: "Domino", desc: "Kartu domino 99", icon: <Grid3X3 size={24} className="text-blue-400" />, online: true, ai: true },
+    { id: "uno", title: "Uno", desc: "Kartu warna warni", icon: <CircleDollarSign size={24} className="text-red-400" />, online: true, ai: true },
+    { id: "spy", title: "Who's The Spy", desc: "Tebak kata rahasia", icon: <Users size={24} className="text-purple-400" />, online: true, ai: false },
+    { id: "tictactoe", title: "Tic Tac Toe", desc: "X dan O", icon: <Grid3X3 size={24} className="text-green-400" />, online: true, ai: true },
+    { id: "sos", title: "SOS", desc: "Game klasik SOS", icon: <Puzzle size={24} className="text-pink-400" />, online: true, ai: true },
+    { id: "ular", title: "Ular Tangga", desc: "Naik tangga turun ular", icon: <Dices size={24} className="text-orange-400" />, online: true, ai: true },
+  ];
+
+  // --- HALAMAN GAME MENU ---
+  const renderGameMenu = () => (
+    <main className="px-4 max-w-md mx-auto mt-4">
+      <div className="flex items-center gap-2 mb-4">
+        <button onClick={() => setActiveTab("home")} className="text-zinc-400 p-1 bg-[#16111e] rounded-lg border border-[#2a2136]"><ChevronLeft size={20}/></button>
+        <h2 className="text-white font-bold text-lg">Game Arcade</h2>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3">
+        {gamesList.map((game) => (
+          <div key={game.id} className="bg-[#16111e] border border-[#2a2136] rounded-xl p-4 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-[#0f0a15] rounded-full flex items-center justify-center mb-2">{game.icon}</div>
+            <h3 className="text-white font-bold text-sm">{game.title}</h3>
+            <p className="text-[9px] text-zinc-500 mb-3">{game.desc}</p>
+            
+            <div className="flex flex-col gap-1 w-full mt-auto">
+              {game.online && <button className="bg-purple-600/20 text-purple-400 border border-purple-600/50 text-[10px] font-bold py-1.5 rounded flex items-center justify-center gap-1 hover:bg-purple-600 hover:text-white transition-all"><Globe2 size={12}/> Online</button>}
+              {game.ai && <button className="bg-zinc-800/50 text-zinc-300 border border-zinc-700 text-[10px] font-bold py-1.5 rounded flex items-center justify-center gap-1 hover:bg-zinc-700 transition-all"><Bot size={12}/> VS NPC</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+
+  // --- HALAMAN HOME ---
   const renderHome = () => (
     <main className="px-4 max-w-md mx-auto space-y-5">
-      {/* Video Banner */}
       <div className="w-full h-44 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
         <video key={videoIndex} src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => videoIndex === 0 && setVideoIndex(1)} loop={videoIndex === 1} />
         <div className="absolute bottom-4 left-4 z-10"><h2 className="text-white font-bold text-lg">Mikasa Project</h2></div>
       </div>
       
-      {/* Kartu Profil */}
       <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-purple-500 flex items-center justify-center">
-          <User size={32} className="text-zinc-500" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-white font-bold text-lg">{username}</h3>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${userRole === 'ADMIN' ? 'bg-red-600' : 'bg-purple-600'} text-white`}>{userRole}</span>
-          </div>
-          <div className="flex items-center gap-1 mt-1 text-green-400 text-xs font-semibold">
-            <CheckCircle2 size={14} /> STATUS: AKTIF (NOT BANNED)
-          </div>
+        <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-purple-500 flex items-center justify-center"><User size={32} className="text-zinc-500" /></div>
+        <div className="flex-1"><div className="flex items-center gap-2"><h3 className="text-white font-bold text-lg">{username}</h3><span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${userRole === 'ADMIN' ? 'bg-red-600' : 'bg-purple-600'} text-white`}>{userRole}</span></div></div>
+      </div>
+
+      <div>
+        <div className="flex justify-between items-center mb-3"><h3 className="text-xs font-bold text-zinc-400 tracking-wider">STATUS</h3><span className="text-xs text-purple-500 font-semibold cursor-pointer">Lihat semua</span></div>
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer"><div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-600 flex items-center justify-center bg-[#16111e] relative"><Plus size={20} className="text-zinc-400" /><div className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-0.5 border-2 border-[#0f0a15]"><Plus size={10} className="text-white"/></div></div><span className="text-[10px] text-zinc-400">Tambah</span></div>
+          {onlineUsers.map((name, i) => (
+            <div key={i} className="flex flex-col items-center gap-1 min-w-[60px]"><div className="w-14 h-14 rounded-full border-2 border-purple-600 p-0.5"><div className="w-full h-full rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center"><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}&backgroundColor=1a1a24`} alt={name} className="w-full h-full object-cover" /></div></div><span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span></div>
+          ))}
         </div>
       </div>
 
-      {/* Music Player */}
+      <div>
+        <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
+        <div className="bg-[#16111e] border border-[#2a2136] rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isPlaying ? 'bg-green-900/50' : 'bg-zinc-800'}`}><Music size={20} className={isPlaying ? 'text-green-500' : 'text-zinc-500'} /></div><div><p className="text-sm text-zinc-300 font-semibold">{musicQuery || "Belum ada lagu"}</p><p className="text-[10px] text-zinc-500">{musicQuery ? "Mikasa Music" : "Buka Music library"}</p></div></div>
+          <ArrowRight size={16} className="text-zinc-500" />
+        </div>
+      </div>
+
       <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
-        <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Music size={16} className="text-purple-400"/> Music Player</h3>
+        <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Music size={16} className="text-purple-400"/> Music Library</h3>
         <div className="flex gap-2 mb-3">
           <input type="text" placeholder="Cari lagu..." value={musicQuery} onChange={(e) => setMusicQuery(e.target.value)} className="flex-1 bg-[#0f0a15] border border-[#2a2136] rounded-lg p-2 text-sm text-white" />
           <button className="bg-purple-600 p-2 rounded-lg text-white"><Search size={18}/></button>
         </div>
-        <div className="bg-[#0f0a15] border border-[#2a2136] rounded-xl p-3 flex items-center justify-between">
-          <div><p className="text-sm text-white font-semibold">{musicQuery || "Belum ada lagu"}</p><p className="text-[10px] text-zinc-500">Mikasa Music</p></div>
-          <button onClick={() => setIsPlaying(!isPlaying)} className="bg-purple-600 p-2 rounded-full text-white">{isPlaying ? <Pause size={18} /> : <Play size={18} />}</button>
-        </div>
+        <button onClick={() => setIsPlaying(!isPlaying)} className="w-full bg-[#1c1526] border border-[#2a2136] py-2 rounded-lg text-white font-semibold flex justify-center items-center gap-2">
+           {isPlaying ? <><Pause size={16}/> Pause Lagu</> : <><Play size={16}/> Putar Lagu</>}
+        </button>
       </div>
 
-      {/* Quick Action & Game */}
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => setActiveTab("tools")} className="bg-[#1e182b] border border-purple-900/50 rounded-xl p-3 flex flex-col items-start gap-1">
+        <button onClick={() => setActiveTab("games")} className="bg-[#1e182b] border border-purple-900/50 rounded-xl p-3 flex flex-col items-start gap-1 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
           <Gamepad2 size={20} className="text-purple-400 mb-1" /><span className="text-sm font-bold text-white">Main Game</span><span className="text-[10px] text-zinc-400">Buka menu game</span>
         </button>
         <button className="bg-[#2a1620] border border-red-900/50 rounded-xl p-3 flex flex-col items-start gap-1">
@@ -198,17 +232,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Status Story */}
-      <div>
-        <h3 className="text-xs font-bold text-zinc-400 mb-2">STATUS ONLINE</h3>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {onlineUsers.map((name, i) => (
-            <div key={i} className="flex flex-col items-center gap-1 min-w-[60px]"><div className="w-14 h-14 rounded-full border-2 border-purple-600 p-0.5"><div className="w-full h-full rounded-full bg-zinc-800 flex items-center justify-center text-purple-400 font-bold uppercase">{name.charAt(0)}</div></div><span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span></div>
-          ))}
-        </div>
-      </div>
-
-      {/* Global Chat */}
       <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
         <div className="flex justify-between items-center mb-3"><h3 className="text-white font-bold text-sm">Global Chat</h3></div>
         <div className="bg-[#0f0a15] border border-[#2a2136] rounded-xl p-3 h-16 overflow-hidden mb-3"><p className="text-xs text-zinc-300">{globalMsgs.length > 0 ? (<><span className="text-purple-400 font-bold">{globalMsgs[globalMsgs.length - 1].from}:</span> {globalMsgs[globalMsgs.length - 1].msg}</>) : ("Belum ada pesan...")}</p></div>
@@ -217,11 +240,11 @@ export default function Home() {
     </main>
   );
 
-  // --- RENDER HALAMAN (CHAT / MENU / FORM) ---
+  // --- RENDER HALAMAN ---
   const renderContent = () => {
     if (activeTab === "home") return renderHome();
+    if (activeTab === "games") return renderGameMenu();
 
-    // Chat Room
     if (activeTab === "chat") {
       return (
         <div className="flex flex-col h-[calc(100vh-130px)]">
@@ -244,7 +267,6 @@ export default function Home() {
       );
     }
 
-    // Form Tool
     if (selectedTool) {
       return (
         <main className="px-4 max-w-md mx-auto mt-4">
@@ -254,17 +276,12 @@ export default function Home() {
              <input type="text" placeholder="Masukkan Target" value={target} onChange={(e) => setTarget(e.target.value)} className="w-full bg-[#0f0a15] border border-[#2a2136] rounded-lg p-3 text-white text-sm mb-4" />
              <button onClick={() => handleToolRequest(selectedTool.endpoint, selectedTool.payload)} className="w-full bg-purple-600 text-white font-bold py-3 rounded-xl">EKSEKUSI</button>
              {loadingTools && <p className="text-center text-xs text-purple-400 mt-4 animate-pulse">Memproses...</p>}
-             {toolsResult && (
-               <div className="mt-4 bg-black border border-zinc-800 p-3 rounded-lg max-h-40 overflow-y-auto">
-                 <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap">{JSON.stringify(toolsResult, null, 2)}</pre>
-               </div>
-             )}
+             {toolsResult && (<div className="mt-4 bg-black border border-zinc-800 p-3 rounded-lg max-h-40 overflow-y-auto"><pre className="text-[10px] text-zinc-400 whitespace-pre-wrap">{JSON.stringify(toolsResult, null, 2)}</pre></div>)}
            </div>
         </main>
       );
     }
 
-    // Menu Kartu
     const menuData = {
       tools: [{ title: "Cek NPSN", desc: "Cari data sekolah", icon: <FileText size={24} className="text-blue-400" />, endpoint: "/api/ceknpsn", payload: { npsn: target } }],
       osint: [{ title: "OSINT Nomor", desc: "Lacak info nomor HP", icon: <Search size={24} className="text-yellow-400" />, endpoint: "/api/osint-nomor", payload: { nomor: target } }],
@@ -292,13 +309,13 @@ export default function Home() {
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-20">
         <Menu size={24} className="text-white" />
-        <h1 className="text-white font-semibold text-lg capitalize">{activeTab}</h1>
+        <h1 className="text-white font-semibold text-lg capitalize">{activeTab === "games" ? "Game Arcade" : activeTab}</h1>
         <User size={20} className="text-zinc-400" />
       </header>
 
       {renderContent()}
 
-      {/* NAVBAR BAWAH LENGKAP */}
+      {/* NAVBAR BAWAH */}
       <div className="fixed bottom-0 w-full bg-[#16111e] border-t border-[#2a2136] p-2 z-30">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide px-2">
            <button onClick={() => { setActiveTab("home"); setSelectedTool(null); }} className="flex flex-col items-center min-w-[70px] p-2"><div className={`p-2 rounded-full ${activeTab === 'home' ? 'bg-purple-600 text-white' : 'text-zinc-500'}`}><HomeIcon size={20} /></div><span className="text-[10px] text-zinc-400">Home</span></button>
