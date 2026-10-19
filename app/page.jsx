@@ -11,6 +11,9 @@ import {
   Clock, Shield, Phone, Terminal
 } from "lucide-react";
 
+// IMPORT GAME ENGINE
+import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
+
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
 const VIDEO_1 = "https://j.top4top.io/m_3944kuzbh0.mp4";
@@ -18,55 +21,35 @@ const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
 
 let globalAudio = null;
 
-// DATA FITUR ASLI DARI INDEX.JS LU
-const TOOL_CATEGORIES = {
-  spam: [
-    { id: 'spamotp', name: "Spam OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx" },
-    { id: 'spamcall', name: "Spam Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx" },
-    { id: 'spampair', name: "Spam Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx" },
-    { id: 'spamngl', name: "Spam NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username_ngl" },
-    { id: 'spamrepwa', name: "Spam Rep WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx" },
-    { id: 'spamgmail', name: "Spam Gmail", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com" },
-    { id: 'spambottele', name: "Spam Bot Tele", endpoint: "/api/spambottele", payload: "target", placeholder: "Token|ID|Pesan" },
-  ],
-  osint: [
-    { id: 'osintnomor', name: "OSINT Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx" },
-    { id: 'osintusername', name: "OSINT Username", endpoint: "/api/osint-username", payload: "username", placeholder: "username" },
-    { id: 'osintip', name: "OSINT IP", endpoint: "/api/osint-ip", payload: "ip", placeholder: "8.8.8.8" },
-    { id: 'osintdomain', name: "OSINT Domain", endpoint: "/api/osint-domain", payload: "domain", placeholder: "google.com" },
-    { id: 'iptracker', name: "IP Tracker", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8" },
-    { id: 'portscan', name: "Port Scan", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com" },
-    { id: 'nikparse', name: "NIK Parse", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit NIK" },
-    { id: 'cekwallet', name: "Cek Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx" }
-  ],
-  bug: [
-    { id: 'bug-wa-verload', name: "Verload FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "verload"} },
-    { id: 'bug-wa-forceclose', name: "Force Close", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "forceclose"} },
-    { id: 'bug-wa-crashcall', name: "Crash Calls", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "crashcalls"} },
-    { id: 'bug-wa-invisible', name: "Invisible FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "invisible"} },
-  ],
-  download: [
-    { id: 'tt', name: "TikTok DL", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok" },
-    { id: 'ig', name: "Instagram DL", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG" },
-    { id: 'fb', name: "Facebook DL", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB" },
-    { id: 'gitdl', name: "GitHub DL", endpoint: "/api/download/github", payload: "url", placeholder: "Link Repo GitHub" },
-  ],
-  utility: [
-    { id: 'cekkodepos', name: "Cek Kode Pos", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112" },
-    { id: 'ceknpsn', name: "Cek NPSN", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594" },
-    { id: 'cekff', name: "Cek FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID Free Fire" },
-    { id: 'cekroblox', name: "Cek Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username Roblox" },
-    { id: 'gtk', name: "Data GTK", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK/NIK" },
-    { id: 'cekbandwa', name: "Cek Band WA", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx" },
-    { id: 'cekresi', name: "Cek Resi", endpoint: "/api/cekresi", payload: "resi", placeholder: "Kurir|No Resi" },
-  ],
-  tools: [
-    { id: 'ssweb', name: "SS Web", endpoint: "/api/ssweb", payload: "url", placeholder: "https://..." },
-    { id: 'qrcustom', name: "QR Custom", endpoint: "/api/qrcustom", payload: "data", placeholder: "Teks/Link" },
-    { id: 'tempmail', name: "Temp Mail", endpoint: "/api/tempmail", payload: "action", placeholder: "create/inbox" },
-    { id: 'shortener', name: "Shortener URL", endpoint: "/api/shortenerurl", payload: "url", placeholder: "Link Panjang" },
-  ]
-};
+// SEMUA TOOLS LANGSUNG DI HOME
+const ALL_TOOLS = [
+  { id: 'spamotp', name: "Spam OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
+  { id: 'spamcall', name: "Spam Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
+  { id: 'spampair', name: "Spam Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
+  { id: 'spamngl', name: "Spam NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam" },
+  { id: 'spamrepwa', name: "Spam Rep WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
+  { id: 'spamgmail', name: "Spam Gmail", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam" },
+  { id: 'osintnomor', name: "OSINT Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT" },
+  { id: 'osintusername', name: "OSINT Usr", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT" },
+  { id: 'iptracker', name: "IP Tracker", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT" },
+  { id: 'portscan', name: "Port Scan", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT" },
+  { id: 'nikparse', name: "NIK Parse", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT" },
+  { id: 'cekwallet', name: "Cek Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT" },
+  { id: 'bug-wa-verload', name: "Verload FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", extra: {type: "verload"} },
+  { id: 'bug-wa-forceclose', name: "Force Close", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", extra: {type: "forceclose"} },
+  { id: 'bug-wa-crashcall', name: "Crash Calls", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", extra: {type: "crashcalls"} },
+  { id: 'tt', name: "TikTok DL", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download" },
+  { id: 'ig', name: "IG DL", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download" },
+  { id: 'fb', name: "FB DL", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download" },
+  { id: 'cekkodepos', name: "Kode Pos", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility" },
+  { id: 'ceknpsn', name: "Cek NPSN", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility" },
+  { id: 'cekff', name: "Cek FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility" },
+  { id: 'cekroblox', name: "Cek Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility" },
+  { id: 'gtk', name: "Data GTK", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility" },
+  { id: 'cekbandwa', name: "Cek Band", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility" },
+];
+
+const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -96,20 +79,19 @@ export default function Home() {
   const [privateMsgs, setPrivateMsgs] = useState([]);
 
   // Tool State
-  const [activeCategory, setActiveCategory] = useState(null); // Kategori yang dipilih (spam, osint, dll)
-  const [activeTool, setActiveTool] = useState(null); // Fitur spesifik yang dipilih (spamotp, spamcall)
+  const [toolCategory, setToolCategory] = useState("Semua");
+  const [activeTool, setActiveTool] = useState(null); 
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
   const [toolLoading, setToolLoading] = useState(false);
+  
+  // Sender State
+  const [senderActive, setSenderActive] = useState(false);
+  const [showSenderModal, setShowSenderModal] = useState(false);
+  const [senderNumber, setSenderNumber] = useState("");
 
   // Game State
-  const [activeGame, setActiveGame] = useState(null);
-  const [board, setBoard] = useState(Array(9).fill(null));
-  const [turn, setTurn] = useState('X');
-  const [unoDeck, setUnoDeck] = useState(["merah 5", "biru 7", "hijau 2", "kuning 9"]);
-  const [unoTarget, setUnoTarget] = useState("merah 3");
-  const [playerPos, setPlayerPos] = useState(1);
-  const [dice, setDice] = useState(1);
+  const [activeGame, setActiveGame] = useState(null); 
 
   // Music State
   const [musicSearch, setMusicSearch] = useState("");
@@ -257,7 +239,7 @@ export default function Home() {
     setIsPlaying(true);
   };
 
-  // --- PROFILE EDIT ---
+  // --- PROFILE EDIT (FIXED) ---
   const handleSaveProfile = (e) => {
     e.preventDefault();
     const updatedProfile = { ...userProfile };
@@ -283,17 +265,9 @@ export default function Home() {
     setToolLoading(true);
     setToolResult(null);
 
-    // Bikin payload dinamis berdasarkan input user
     let payloadBody = {};
     if (activeTool.extra) Object.assign(payloadBody, activeTool.extra);
     payloadBody[activeTool.payload] = toolTarget;
-    
-    // Handle spesifik buat beberapa endpoint yg butuh key tambahan
-    if (activeTool.id === 'spamgmail') payloadBody.email = toolTarget;
-    if (activeTool.id === 'cekresi') {
-        const parts = toolTarget.split('|');
-        payloadBody.kurir = parts[0]; payloadBody.resi = parts[1];
-    }
 
     try {
       const res = await fetch(`${API_URL}${activeTool.endpoint}`, {
@@ -310,30 +284,11 @@ export default function Home() {
     }
   };
 
-  // --- GAME LOGIC ---
-  const checkTicTacToeWin = (b) => {
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for (let line of lines) {
-      if (b[line[0]] && b[line[0]] === b[line[1]] && b[line[0]] === b[line[2]]) return b[line[0]];
-    }
-    return b.includes(null) ? null : 'Draw';
-  };
-
-  const handleTicTacToeClick = (i) => {
-    if (board[i] || checkTicTacToeWin(board) || !activeGame) return;
-    const newBoard = [...board];
-    newBoard[i] = 'X';
-    setBoard(newBoard);
-    setTurn('O');
-    setTimeout(() => {
-      const empty = newBoard.map((v, idx) => v === null ? idx : null).filter(v => v !== null);
-      if (!empty.length) return;
-      const move = empty[Math.floor(Math.random() * empty.length)];
-      const finalBoard = [...newBoard];
-      finalBoard[move] = 'O';
-      setBoard(finalBoard);
-      setTurn('X');
-    }, 500);
+  const handleSenderSave = () => {
+    // Simulasi simpen sender nomor WA ke API
+    if(senderNumber.length < 10) return alert("Nomor gak valid");
+    setSenderActive(true);
+    setShowSenderModal(false);
   };
 
   // --- RENDERS ---
@@ -381,6 +336,34 @@ export default function Home() {
     </>
   );
 
+  // --- MODAL PROFILE (FIXED FILE INPUT) ---
+  const renderProfileModal = () => (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
+        <button onClick={() => setShowProfileModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
+        <h2 className="text-white font-bold text-lg mb-4">Edit Profil</h2>
+        <form onSubmit={handleSaveProfile} className="space-y-4">
+          <div className="flex flex-col items-center mb-4 relative">
+            <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-500 overflow-hidden">
+              {userProfile.avatar ? <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-zinc-500 m-auto mt-4" />}
+            </div>
+            {/* FIX: Label Input File Full Cover */}
+            <label className="absolute top-0 w-24 h-24 rounded-full cursor-pointer bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <Camera size={24} className="text-white" />
+                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+            </label>
+            <span className="text-[10px] text-zinc-500 mt-2">Klik foto untuk ganti</span>
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 block mb-1">Nama Tampilan</label>
+            <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({...userProfile, name: e.target.value})} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" />
+          </div>
+          <button type="submit" className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg">Simpan</button>
+        </form>
+      </div>
+    </div>
+  );
+
   const renderToolModal = () => {
     if (!activeTool) return null;
     return (
@@ -414,83 +397,28 @@ export default function Home() {
     );
   };
 
-  const renderGameModal = () => {
-    if (!activeGame) return null;
+  const renderSenderModal = () => {
+    if (!showSenderModal) return null;
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
-          <button onClick={() => setActiveGame(null)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
-          <h2 className="text-white font-bold text-lg mb-4 text-center capitalize">{activeGame}</h2>
-
-          {activeGame === 'tictactoe' && (
-             <div className="flex flex-col items-center">
-               <h3 className="text-zinc-300 mb-4">{checkTicTacToeWin(board) ? (checkTicTacToeWin(board) === 'Draw' ? 'Seri!' : `Menang: ${checkTicTacToeWin(board)}`) : `Giliran: ${turn}`}</h3>
-               <div className="grid grid-cols-3 gap-2 mb-6">
-                 {board.map((cell, i) => (
-                   <button key={i} onClick={() => handleTicTacToeClick(i)} className="w-20 h-20 bg-[#0f0a15] border border-zinc-700 rounded-xl text-3xl font-bold flex items-center justify-center">
-                     <span className={cell === 'X' ? 'text-zinc-400' : 'text-red-500'}>{cell}</span>
-                   </button>
-                 ))}
-               </div>
-               <button onClick={() => { setBoard(Array(9).fill(null)); setTurn('X'); }} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-xl">Reset</button>
-             </div>
-          )}
-
-          {activeGame === 'uno' && (
-             <div className="flex flex-col items-center text-center">
-               <p className="text-sm text-zinc-400 mb-2">Kartu Target:</p>
-               <div className={`w-24 h-32 rounded-xl mb-6 flex items-center justify-center text-white text-xl font-bold shadow-lg ${unoTarget.includes("merah") ? "bg-red-600" : "bg-blue-600"}`}>
-                 {unoTarget}
-               </div>
-               <p className="text-sm text-zinc-400 mb-2">Kartu Kamu:</p>
-               <div className="flex gap-2 mb-6">
-                 {unoDeck.map((c, i) => (
-                    <div key={i} className={`w-16 h-24 rounded-lg flex items-center justify-center text-white text-xs font-bold ${c.includes("merah") ? "bg-red-600" : c.includes("biru") ? "bg-blue-600" : "bg-green-600"}`}>{c}</div>
-                 ))}
-               </div>
-             </div>
-          )}
-
-          {activeGame === 'ular' && (
-            <div className="flex flex-col items-center">
-              <div className="grid grid-cols-5 gap-1 mb-6 w-full aspect-square bg-[#0f0a15] p-2 rounded-xl border border-zinc-700">
-                {Array.from({length: 25}, (_, i) => 25 - i).map((num) => (
-                  <div key={num} className={`flex items-center justify-center text-xs font-bold text-white rounded ${num === playerPos ? "bg-zinc-600" : "bg-[#2a2a2e]"}`}>
-                    {num === playerPos ? "P" : num}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="text-4xl">{['⚀','⚁','⚂','⚃','⚄','⚅'][dice-1]}</div>
-                <div className="text-white font-bold">Posisi: {playerPos}</div>
-              </div>
-              <button onClick={() => {
-                const d = Math.floor(Math.random() * 6) + 1;
-                setDice(d);
-                let newPos = Math.min(25, playerPos + d);
-                const snakes = { 12: 5, 18: 8, 24: 16 };
-                const ladders = { 3: 10, 7: 15, 14: 21 };
-                if (snakes[newPos]) newPos = snakes[newPos];
-                if (ladders[newPos]) newPos = ladders[newPos];
-                setPlayerPos(newPos);
-                if (newPos === 25) alert("Kamu Menang! 🎉");
-              }} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-xl mb-2">Lempar Dadu</button>
-              <button onClick={() => setPlayerPos(1)} className="w-full bg-zinc-800 text-white font-bold py-2 rounded-xl">Reset</button>
+          <button onClick={() => setShowSenderModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
+          <h2 className="text-white font-bold text-lg mb-2">Sender WhatsApp</h2>
+          <p className="text-xs text-zinc-400 mb-4">Masukkan nomor WA lu untuk Bug WA. (Pastikan udah pairing di bot Pterodactyl).</p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-zinc-400 block mb-1">Nomor WhatsApp</label>
+              <input 
+                type="text" 
+                value={senderNumber} 
+                onChange={(e) => setSenderNumber(e.target.value)} 
+                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" 
+                placeholder="628xxx" 
+              />
             </div>
-          )}
-
-          {activeGame === 'catur' && (
-            <div className="flex flex-col items-center">
-              <div className="grid grid-cols-8 border-2 border-zinc-600 w-full aspect-square mb-4">
-                {["♜","♞","♝","♛","♚","♝","♞","♜","♟","♟","♟","♟","♟","♟","♟","♟","","","","","","","","","","","","","","","","","♙","♙","♙","♙","♙","♙","♙","♙","♖","♘","♗","♕","♔","♗","♘","♖"].map((p, i) => (
-                  <div key={i} className={`flex items-center justify-center text-lg sm:text-xl ${(i + Math.floor(i/8)) % 2 === 0 ? 'bg-zinc-400' : 'bg-zinc-600'}`}>
-                    {p}
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-zinc-500 text-center">*Visual Mode.</p>
-            </div>
-          )}
+            <button onClick={handleSenderSave} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg">Simpan Sender</button>
+          </div>
         </div>
       </div>
     );
@@ -505,7 +433,7 @@ export default function Home() {
           <Menu size={24} />
         </button>
         <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">
-          {activeCategory ? `Menu ${activeCategory}` : activeTab === "home" ? `Hello, ${userProfile.name}` : activeTab}
+          {activeTab === "home" ? `Hello, ${userProfile.name}` : activeTab}
         </h1>
         <button onClick={() => setShowProfileModal(true)} className="w-10 h-10 rounded-full border border-zinc-500 overflow-hidden bg-zinc-800 flex items-center justify-center">
            {userProfile.avatar ? <img src={userProfile.avatar} className="w-full h-full object-cover"/> : <User size={20} className="text-zinc-400"/>}
@@ -513,28 +441,21 @@ export default function Home() {
       </header>
 
       {renderSidebar()}
+      {renderProfileModal()}
       {renderToolModal()}
-      {renderGameModal()}
+      {renderSenderModal()}
+
+      {/* RENDER GAME MODALS */}
+      {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
+      {activeGame === 'uno' && <GameUno onClose={() => setActiveGame(null)} />}
+      {activeGame === 'ular' && <GameUlarTangga onClose={() => setActiveGame(null)} />}
+      {activeGame === 'spy' && <GameSpy onClose={() => setActiveGame(null)} />}
+      {activeGame === 'tictactoe' && <GameTicTacToe level="medium" onClose={() => setActiveGame(null)} />}
 
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
         
-        {/* TAMPILAN MENU FITUR (KALO KATEGORI DIKLIK) */}
-        {activeCategory && (
-          <div>
-            <button onClick={() => setActiveCategory(null)} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Home</button>
-            <div className="space-y-2">
-              {TOOL_CATEGORIES[activeCategory].map((tool) => (
-                <button key={tool.id} onClick={() => setActiveTool(tool)} className="w-full bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex items-center justify-between hover:bg-zinc-800 transition-colors">
-                  <span className="text-white font-medium">{tool.name}</span>
-                  <ArrowRight size={16} className="text-zinc-500" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* TAB HOME */}
-        {activeTab === "home" && !activeCategory && (
+        {activeTab === "home" && (
           <>
             {/* KARTU JAM */}
             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
@@ -651,21 +572,36 @@ export default function Home() {
               </div>
             </div>
 
-            {/* KATEGORI TOOLS GRID */}
+            {/* ALL TOOLS (LANGSUNG DI HOME) */}
             <div>
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Kategori Tools</h3>
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { id: 'bug', name: "Bug WA", icon: Bug, color: "text-red-500" },
-                  { id: 'osint', name: "OSINT", icon: Search, color: "text-blue-500" },
-                  { id: 'spam', name: "Spam", icon: MessageSquare, color: "text-emerald-500" },
-                  { id: 'download', name: "Download", icon: DownloadCloud, color: "text-pink-500" },
-                  { id: 'utility', name: "Utility", icon: Shield, color: "text-yellow-500" },
-                  { id: 'tools', name: "Tools Lain", icon: FileText, color: "text-purple-500" },
-                ].map((cat) => (
-                  <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
-                    <cat.icon size={20} className={`${cat.color} mb-2`} />
-                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{cat.name}</span>
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Semua Fitur</h3>
+              
+              {/* Sender Button (Khusus Bug WA) */}
+              <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield size={18} className={senderActive ? "text-green-500" : "text-red-500"} />
+                  <div>
+                    <p className="text-white text-sm font-bold">Sender WA</p>
+                    <p className="text-[10px] text-zinc-500">{senderActive ? senderNumber : "Belum terhubung"}</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowSenderModal(true)} className="bg-zinc-800 px-3 py-1 rounded-lg text-xs text-white">{senderActive ? "Ganti" : "Hubungkan"}</button>
+              </div>
+
+              {/* Filter Kategori Tools */}
+              <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-2">
+                {CATEGORIES.map((cat) => (
+                  <button key={cat} onClick={() => setToolCategory(cat)} className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${toolCategory === cat ? 'bg-zinc-600 text-white' : 'bg-[#1c1c1e] text-zinc-400 border border-zinc-700'}`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Grid Tools */}
+              <div className="grid grid-cols-3 gap-2">
+                {ALL_TOOLS.filter(t => toolCategory === "Semua" || t.cat === toolCategory).map((tool) => (
+                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
+                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{tool.name}</span>
                   </button>
                 ))}
               </div>
@@ -673,10 +609,10 @@ export default function Home() {
           </>
         )}
 
-        {/* TAB CHAT */}
+        {/* TAB CHAT (FIXED KEYBOARD OVERLAY) */}
         {activeTab === "chat" && (
-          <div className="fixed inset-0 bg-[#0f0a15] z-40 flex flex-col pt-16 pb-20">
-            <div className="absolute top-0 left-0 w-full h-16 bg-[#0f0a15]/90 backdrop-blur-md flex items-center px-4 border-b border-zinc-800">
+          <div className="fixed inset-0 bg-[#0f0a15] z-40 flex flex-col h-[100dvh]">
+            <div className="bg-[#0f0a15]/90 backdrop-blur-md flex items-center px-4 border-b border-zinc-800 pt-4 pb-2 shrink-0">
               <button onClick={() => setActiveTab("home")} className="p-2 mr-2 text-white">
                 <ChevronLeft size={24} />
               </button>
@@ -686,7 +622,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 pt-20 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
               {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => (
                 <div key={i} className={`flex ${m.from === username ? 'flex-row-reverse' : 'flex-row'} items-start gap-2`}>
                   <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-white uppercase flex-shrink-0">{m.from.charAt(0)}</div>
@@ -698,7 +634,7 @@ export default function Home() {
               ))}
             </div>
             
-            <form onSubmit={chatMode === "global" ? sendGlobalMsg : sendPrivateMsg} className="p-3 bg-[#1c1c1e] border-t border-zinc-700 flex gap-2 items-center">
+            <form onSubmit={chatMode === "global" ? sendGlobalMsg : sendPrivateMsg} className="p-3 bg-[#1c1c1e] border-t border-zinc-700 flex gap-2 items-center shrink-0">
               <input type="text" value={msgInput} onChange={e=>setMsgInput(e.target.value)} placeholder="Ketik pesan..." className="flex-1 bg-[#0f0a15] border border-zinc-700 rounded-full px-4 py-2 text-sm text-white focus:outline-none" />
               <button type="submit" className="bg-zinc-600 p-2 rounded-full text-white"><Send size={16} /></button>
             </form>
@@ -715,6 +651,7 @@ export default function Home() {
                 { id: "uno", title: "Uno", icon: <CircleDollarSign size={24} className="text-red-400" /> },
                 { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" /> },
                 { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" /> },
+                { id: "spy", title: "Who's The Spy", icon: <Users size={24} className="text-purple-400" /> },
               ].map((game) => (
                 <div key={game.id} onClick={() => setActiveGame(game.id)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex flex-col items-center text-center cursor-pointer hover:border-zinc-500">
                   <div className="w-12 h-12 bg-[#0f0a15] rounded-full flex items-center justify-center mb-2">{game.icon}</div>
@@ -723,6 +660,27 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* TAB SETTINGS (FIXED) */}
+        {activeTab === "settings" && (
+          <div className="space-y-4">
+             <h2 className="text-white font-bold text-xl mb-4">Settings</h2>
+             <button onClick={() => setShowProfileModal(true)} className="w-full bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center gap-4 hover:bg-zinc-800">
+                <User size={20} className="text-zinc-400" />
+                <span className="text-white">Edit Profil</span>
+             </button>
+             <button onClick={handleLogout} className="w-full bg-red-900/20 border border-red-900/50 p-4 rounded-xl flex items-center gap-4 text-red-400 hover:bg-red-900/40">
+                <LogOut size={20} />
+                <span>Logout Akun</span>
+             </button>
+             
+             <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mt-6">
+                <h3 className="text-white font-bold mb-2">Info Aplikasi</h3>
+                <p className="text-xs text-zinc-400">Versi: 2.0.0 (Mikasa Update)</p>
+                <p className="text-xs text-zinc-400">Developer: Rullzzz06</p>
+             </div>
           </div>
         )}
       </main>
@@ -735,7 +693,7 @@ export default function Home() {
              { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
              { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
            ].map((item) => (
-             <button key={item.id} onClick={() => { setActiveTab(item.id); setActiveCategory(null); }} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
+             <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
                <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-zinc-700 text-white' : ''}`}>{item.icon}</div>
                <span className="text-[10px]">{item.label}</span>
              </button>
@@ -745,17 +703,17 @@ export default function Home() {
 
       {/* MUSIC LIBRARY MODAL */}
       {showMusicLibrary && (
-        <div className="fixed inset-0 bg-[#0f0a15] z-50 flex flex-col p-4">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="fixed inset-0 bg-[#0f0a15] z-50 flex flex-col p-4 h-[100dvh]">
+          <div className="flex items-center gap-3 mb-6 shrink-0">
             <button onClick={() => setShowMusicLibrary(false)} className="p-2 bg-[#1c1c1e] border border-zinc-700 rounded-lg text-zinc-400"><ChevronLeft size={20}/></button>
             <h2 className="text-white font-bold text-xl">Music Library</h2>
           </div>
-          <form onSubmit={handleSearchMusic} className="relative mb-6">
+          <form onSubmit={handleSearchMusic} className="relative mb-6 shrink-0">
             <Search className="absolute left-4 top-3.5 text-zinc-500" size={20} />
             <input type="text" placeholder="Cari lagu / artis..." value={musicSearch} onChange={(e) => setMusicSearch(e.target.value)} className="w-full bg-[#1c1c1e] border border-zinc-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none" />
             <button type="submit" className="absolute right-2 top-2 bg-zinc-600 p-2 rounded-lg text-white"><Search size={16}/></button>
           </form>
-          <div className="flex-1 overflow-y-auto space-y-3 pb-24">
+          <div className="flex-1 overflow-y-auto space-y-3">
             {loadingMusic ? (
               <div className="flex justify-center items-center h-40"><Loader2 className="animate-spin text-zinc-400" size={32}/></div>
             ) : musicResults.length === 0 ? (
