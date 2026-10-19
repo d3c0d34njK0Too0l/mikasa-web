@@ -98,7 +98,7 @@ export default function Home() {
     return null;
   };
 
-  // --- LOGIKA UNO (VERSI SEDERHANA) ---
+  // --- LOGIKA UNO ---
   const [unoDeck, setUnoDeck] = useState([]);
   const [unoPlayer, setUnoPlayer] = useState([]);
   const [unoNpc, setUnoNpc] = useState([]);
@@ -111,12 +111,11 @@ export default function Home() {
     let deck = [];
     colors.forEach(c => values.forEach(v => deck.push({ color: c, value: v })));
     deck = deck.sort(() => Math.random() - 0.5);
-    
     setUnoPlayer(deck.slice(0, 5));
     setUnoNpc(deck.slice(5, 10));
     setUnoDiscard(deck[10]);
     setUnoDeck(deck.slice(11));
-    setUnoMsg("Giliran kamu! Pilih kartu dengan warna/angka yang sama.");
+    setUnoMsg("Pilih kartu dengan warna/angka yang sama!");
   };
 
   const playUno = (cardIndex) => {
@@ -127,7 +126,7 @@ export default function Home() {
       setUnoDiscard(card);
       
       if (newPlayer.length === 0) { setUnoMsg("KAMU MENANG!"); return; }
-      setUnoMsg("NPC sedang berfikir...");
+      setUnoMsg("NPC berfikir...");
       
       setTimeout(() => {
         let played = false;
@@ -140,14 +139,14 @@ export default function Home() {
             break;
           }
         }
-        if (!played) setUnoMsg("NPC menarik kartu. Giliran kamu lagi!");
+        if (!played) setUnoMsg("NPC menarik kartu. Giliran kamu!");
       }, 1000);
     } else {
-      setUnoMsg("Kartu tidak cocok! Harus warna atau angka yang sama.");
+      setUnoMsg("Kartu tidak cocok!");
     }
   };
 
-  // --- LOGIKA DOMINO SEDERHANA ---
+  // --- LOGIKA DOMINO ---
   const [dominoPlayer, setDominoPlayer] = useState([]);
   const [dominoBoard, setDominoBoard] = useState([]);
   const [dominoMsg, setDominoMsg] = useState("");
@@ -176,22 +175,19 @@ export default function Home() {
       setDominoPlayer(dominoPlayer.filter((_, i) => i !== idx));
     } else {
       setDominoMsg("Kartu tidak cocok dengan ujung papan!");
-      return;
     }
-    setDominoMsg("Kartu dipasang! Giliran NPC...");
   };
 
   // --- LOGIN & SOCKET ---
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError("");
+    e.preventDefault(); setLoginError("");
     try {
       const res = await fetch("https://raw.githubusercontent.com/d3c0d34njK0Too0l/mikasa-web/main/users.json");
       const users = await res.json();
       const validUser = users.find(u => u.username === username && u.password === password);
       if (validUser) { setUserRole(validUser.role ? validUser.role.toUpperCase() : "FREE"); setShowIntro(true); }
       else { setLoginError("Akun tidak ditemukan."); }
-    } catch (err) { setLoginError("Gagal terhubung ke database."); }
+    } catch (err) { setLoginError("Gagal terhubung."); }
   };
 
   useEffect(() => {
@@ -366,7 +362,6 @@ export default function Home() {
     );
   };
 
-  // DATA FITUR LENGKAP
   const menuData = {
     tools: [
       { title: "Cek NPSN", desc: "Cari data sekolah", icon: <FileText size={24} className="text-blue-400"/>, endpoint: "/api/ceknpsn", payload: { npsn: target } },
