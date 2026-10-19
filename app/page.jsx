@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { Chessboard } from "react-chessboard";
-import { Chess } from "chess.js";
 import { 
   Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
   MessageSquare, Bell, Plus, Heart, Calendar, Wrench, 
@@ -51,25 +49,6 @@ export default function Home() {
   // Music State
   const [musicQuery, setMusicQuery] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-
-  // --- LOGIKA CATUR ---
-  const [chessGame, setChessGame] = useState(new Chess());
-  function makeRandomMove() {
-    const possibleMoves = chessGame.moves();
-    if (chessGame.isGameOver() || possibleMoves.length === 0) return;
-    const randomIndex = Math.floor(Math.random() * possibleMoves.length);
-    chessGame.move(possibleMoves[randomIndex]);
-    setChessGame(new Chess(chessGame.fen()));
-  }
-  function onDrop(sourceSquare, targetSquare) {
-    try {
-      const move = chessGame.move({ from: sourceSquare, to: targetSquare, promotion: "q" });
-      if (move === null) return false;
-      setChessGame(new Chess(chessGame.fen()));
-      setTimeout(() => makeRandomMove(), 500);
-      return true;
-    } catch (error) { return false; }
-  }
 
   // --- LOGIKA TICTACTOE ---
   const [tttBoard, setTttBoard] = useState(Array(9).fill(null));
@@ -159,7 +138,7 @@ export default function Home() {
     deck = deck.sort(() => Math.random() - 0.5);
     setDominoPlayer(deck.slice(0, 7));
     setDominoBoard([deck[14]]);
-    setDominoMsg("Pilih kartu yang ujungnya cocok dengan papan!");
+    setDominoMsg("Pasang kartu yang ujungnya cocok!");
   };
 
   const playDomino = (idx) => {
@@ -256,23 +235,15 @@ export default function Home() {
   }
 
   const gamesList = [
-    { id: "catur", title: "Catur", icon: <Crown size={24} className="text-yellow-400" /> },
     { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" /> },
     { id: "uno", title: "Uno Card", icon: <CircleDollarSign size={24} className="text-red-400" /> },
     { id: "domino", title: "Domino", icon: <Grid3X3 size={24} className="text-blue-400" /> },
+    { id: "catur", title: "Catur (Soon)", icon: <Crown size={24} className="text-yellow-400" /> },
     { id: "sos", title: "SOS", icon: <Puzzle size={24} className="text-pink-400" /> },
     { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" /> },
   ];
 
   const renderGameMenu = () => {
-    if (activeGame === "catur") {
-      return (
-        <div className="bg-[#16111e] p-4 rounded-2xl">
-           <button onClick={() => setActiveGame(null)} className="text-red-400 text-xs font-bold mb-4">← Keluar</button>
-           <Chessboard position={chessGame.fen()} onPieceDrop={onDrop} boardWidth={320} />
-        </div>
-      );
-    }
     if (activeGame === "tictactoe") {
       return (
         <div className="bg-[#16111e] p-4 rounded-2xl flex flex-col items-center">
@@ -338,7 +309,7 @@ export default function Home() {
         </div>
       );
     }
-    if (activeGame === "sos" || activeGame === "ular") {
+    if (activeGame === "sos" || activeGame === "ular" || activeGame === "catur") {
       return (
         <div className="bg-[#16111e] p-6 rounded-2xl flex flex-col items-center text-center">
            <button onClick={() => setActiveGame(null)} className="text-red-400 text-xs font-bold mb-4 self-start">← Keluar</button>
@@ -362,6 +333,7 @@ export default function Home() {
     );
   };
 
+  // DATA FITUR LENGKAP
   const menuData = {
     tools: [
       { title: "Cek NPSN", desc: "Cari data sekolah", icon: <FileText size={24} className="text-blue-400"/>, endpoint: "/api/ceknpsn", payload: { npsn: target } },
