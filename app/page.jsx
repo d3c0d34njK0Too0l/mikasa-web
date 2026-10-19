@@ -21,32 +21,32 @@ const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
 
 let globalAudio = null;
 
-// SEMUA TOOLS LANGSUNG DI HOME
+// SEMUA TOOLS LANGSUNG DI HOME (DENGAN EMOJI)
 const ALL_TOOLS = [
-  { id: 'spamotp', name: "Spam OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
-  { id: 'spamcall', name: "Spam Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
-  { id: 'spampair', name: "Spam Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
-  { id: 'spamngl', name: "Spam NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam" },
-  { id: 'spamrepwa', name: "Spam Rep WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam" },
-  { id: 'spamgmail', name: "Spam Gmail", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam" },
-  { id: 'osintnomor', name: "OSINT Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT" },
-  { id: 'osintusername', name: "OSINT Usr", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT" },
-  { id: 'iptracker', name: "IP Tracker", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT" },
-  { id: 'portscan', name: "Port Scan", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT" },
-  { id: 'nikparse', name: "NIK Parse", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT" },
-  { id: 'cekwallet', name: "Cek Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT" },
-  { id: 'bug-wa-verload', name: "Verload FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", extra: {type: "verload"} },
-  { id: 'bug-wa-forceclose', name: "Force Close", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Calls", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", extra: {type: "crashcalls"} },
-  { id: 'tt', name: "TikTok DL", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download" },
-  { id: 'ig', name: "IG DL", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download" },
-  { id: 'fb', name: "FB DL", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download" },
-  { id: 'cekkodepos', name: "Kode Pos", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility" },
-  { id: 'ceknpsn', name: "Cek NPSN", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility" },
-  { id: 'cekff', name: "Cek FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility" },
-  { id: 'cekroblox', name: "Cek Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility" },
-  { id: 'gtk', name: "Data GTK", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility" },
-  { id: 'cekbandwa', name: "Cek Band", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility" },
+  { id: 'spamotp', name: "Spam OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "💥" },
+  { id: 'spamcall', name: "Spam Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "📞" },
+  { id: 'spampair', name: "Spam Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "🔗" },
+  { id: 'spamngl', name: "Spam NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", emoji: "🕵️" },
+  { id: 'spamrepwa', name: "Spam Rep WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "🚨" },
+  { id: 'spamgmail', name: "Spam Gmail", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", emoji: "📧" },
+  { id: 'osintnomor', name: "OSINT Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", emoji: "📱" },
+  { id: 'osintusername', name: "OSINT Usr", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", emoji: "👤" },
+  { id: 'iptracker', name: "IP Tracker", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", emoji: "🌐" },
+  { id: 'portscan', name: "Port Scan", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", emoji: "🚪" },
+  { id: 'nikparse', name: "NIK Parse", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", emoji: "🪪" },
+  { id: 'cekwallet', name: "Cek Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", emoji: "💳" },
+  { id: 'bug-wa-verload', name: "Verload FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", emoji: "💀", extra: {type: "verload"} },
+  { id: 'bug-wa-forceclose', name: "Force Close", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", emoji: "💣", extra: {type: "forceclose"} },
+  { id: 'bug-wa-crashcall', name: "Crash Calls", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", emoji: "🔪", extra: {type: "crashcalls"} },
+  { id: 'tt', name: "TikTok DL", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", emoji: "🎵" },
+  { id: 'ig', name: "IG DL", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", emoji: "📸" },
+  { id: 'fb', name: "FB DL", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", emoji: "📘" },
+  { id: 'cekkodepos', name: "Kode Pos", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", emoji: "📮" },
+  { id: 'ceknpsn', name: "Cek NPSN", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", emoji: "🏫" },
+  { id: 'cekff', name: "Cek FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", emoji: "🔥" },
+  { id: 'cekroblox', name: "Cek Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", emoji: "🎮" },
+  { id: 'gtk', name: "Data GTK", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", emoji: "👨‍🏫" },
+  { id: 'cekbandwa', name: "Cek Band", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", emoji: "🚫" },
 ];
 
 const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
@@ -239,7 +239,7 @@ export default function Home() {
     setIsPlaying(true);
   };
 
-  // --- PROFILE EDIT (FIXED) ---
+  // --- PROFILE EDIT ---
   const handleSaveProfile = (e) => {
     e.preventDefault();
     const updatedProfile = { ...userProfile };
@@ -285,7 +285,6 @@ export default function Home() {
   };
 
   const handleSenderSave = () => {
-    // Simulasi simpen sender nomor WA ke API
     if(senderNumber.length < 10) return alert("Nomor gak valid");
     setSenderActive(true);
     setShowSenderModal(false);
@@ -336,33 +335,37 @@ export default function Home() {
     </>
   );
 
-  // --- MODAL PROFILE (FIXED FILE INPUT) ---
-  const renderProfileModal = () => (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
-        <button onClick={() => setShowProfileModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
-        <h2 className="text-white font-bold text-lg mb-4">Edit Profil</h2>
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div className="flex flex-col items-center mb-4 relative">
-            <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-500 overflow-hidden">
-              {userProfile.avatar ? <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-zinc-500 m-auto mt-4" />}
+  // --- MODAL PROFILE (FIXED NYANGKUT) ---
+  const renderProfileModal = () => {
+    if (!showProfileModal) return null; // FIX: Biar gabisa nyangkut
+
+    return (
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
+          <button onClick={() => setShowProfileModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
+          <h2 className="text-white font-bold text-lg mb-4">Edit Profil</h2>
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="flex flex-col items-center mb-4 relative">
+              <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-500 overflow-hidden">
+                {userProfile.avatar ? <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-zinc-500 m-auto mt-4" />}
+              </div>
+              {/* Label Input Full Cover */}
+              <label className="absolute top-0 w-24 h-24 rounded-full cursor-pointer bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <Camera size={24} className="text-white" />
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </label>
+              <span className="text-[10px] text-zinc-500 mt-2">Klik foto untuk ganti</span>
             </div>
-            {/* FIX: Label Input File Full Cover */}
-            <label className="absolute top-0 w-24 h-24 rounded-full cursor-pointer bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <Camera size={24} className="text-white" />
-                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-            </label>
-            <span className="text-[10px] text-zinc-500 mt-2">Klik foto untuk ganti</span>
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400 block mb-1">Nama Tampilan</label>
-            <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({...userProfile, name: e.target.value})} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" />
-          </div>
-          <button type="submit" className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg">Simpan</button>
-        </form>
+            <div>
+              <label className="text-xs text-zinc-400 block mb-1">Nama Tampilan</label>
+              <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({...userProfile, name: e.target.value})} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" />
+            </div>
+            <button type="submit" className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg">Simpan</button>
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderToolModal = () => {
     if (!activeTool) return null;
@@ -441,9 +444,11 @@ export default function Home() {
       </header>
 
       {renderSidebar()}
-      {renderProfileModal()}
-      {renderToolModal()}
-      {renderSenderModal()}
+      
+      {/* FIX: Modal cuma muncul kalo state true */}
+      {showProfileModal && renderProfileModal()}
+      {activeTool && renderToolModal()}
+      {showSenderModal && renderSenderModal()}
 
       {/* RENDER GAME MODALS */}
       {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
@@ -600,7 +605,8 @@ export default function Home() {
               {/* Grid Tools */}
               <div className="grid grid-cols-3 gap-2">
                 {ALL_TOOLS.filter(t => toolCategory === "Semua" || t.cat === toolCategory).map((tool) => (
-                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
+                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors h-20">
+                    <span className="text-lg mb-1">{tool.emoji}</span>
                     <span className="text-[10px] text-zinc-300 text-center leading-tight">{tool.name}</span>
                   </button>
                 ))}
