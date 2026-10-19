@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { 
-  Home, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
+  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
   MessageSquare, Bell, Plus, CheckCircle2, 
   Heart, Calendar, Wrench, DownloadCloud, Search, Bug, 
   Send, X, ChevronLeft
@@ -58,7 +58,7 @@ export default function Home() {
       const validUser = users.find(u => u.username === username && u.password === password);
       
       if (validUser) {
-        setShowIntro(true); // Masuk layar video
+        setShowIntro(true);
       } else {
         setLoginError("Akun tidak ditemukan atau password salah.");
       }
@@ -89,7 +89,6 @@ export default function Home() {
     }
   }, [isLoggedIn, username]);
 
-  // --- FUNGSI KIRIM PESAN GLOBAL ---
   const sendGlobalMsg = (e) => {
     e.preventDefault();
     if (!msgInput.trim() || !socket) return;
@@ -97,7 +96,6 @@ export default function Home() {
     setMsgInput("");
   };
 
-  // --- FUNGSI NEMBAK API TOOLS ---
   const handleToolRequest = async (endpoint, payload) => {
     setLoadingTools(true);
     setToolsResult(null);
@@ -120,11 +118,9 @@ export default function Home() {
   if (showIntro) {
     return (
       <div className="min-h-screen bg-black relative flex items-center justify-center">
-        <video 
-          autoPlay muted playsInline className="w-full h-full object-cover absolute inset-0"
+        <video autoPlay muted playsInline className="w-full h-full object-cover absolute inset-0"
           onTimeUpdate={(e) => { if (e.target.currentTime > 3) { setShowIntro(false); setIsLoggedIn(true); } }}
-          onEnded={() => { setShowIntro(false); setIsLoggedIn(true); }}
-        >
+          onEnded={() => { setShowIntro(false); setIsLoggedIn(true); }}>
           <source src={INTRO_VIDEO} type="video/mp4" />
         </video>
         <audio autoPlay>
@@ -163,7 +159,7 @@ export default function Home() {
     );
   }
 
-  // --- HALAMAN CHAT GLOBAL (TERPISAH) ---
+  // --- HALAMAN CHAT GLOBAL ---
   if (activeTab === "chat") {
     return (
       <div className="min-h-screen bg-[#0f0a15] flex flex-col h-screen">
@@ -192,7 +188,7 @@ export default function Home() {
     );
   }
 
-  // --- RENDER KONTEN UTAMA (HOME / TOOLS) ---
+  // --- RENDER KONTEN UTAMA ---
   const renderContent = () => {
     if (activeTab === "home") {
       return (
@@ -289,7 +285,7 @@ export default function Home() {
       {/* NAVBAR BAWAH */}
       <div className="fixed bottom-0 w-full bg-[#16111e] border-t border-[#2a2136] p-2 z-30">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide px-2">
-           <button onClick={() => setActiveTab("home")} className="flex flex-col items-center min-w-[70px] p-2"><div className={`p-2 rounded-full ${activeTab === 'home' ? 'bg-purple-600 text-white' : 'text-zinc-500'}`}><Home size={20} /></div><span className="text-[10px] mt-1 text-zinc-400">Home</span></button>
+           <button onClick={() => setActiveTab("home")} className="flex flex-col items-center min-w-[70px] p-2"><div className={`p-2 rounded-full ${activeTab === 'home' ? 'bg-purple-600 text-white' : 'text-zinc-500'}`}><HomeIcon size={20} /></div><span className="text-[10px] mt-1 text-zinc-400">Home</span></button>
            <button onClick={() => setActiveTab("tools")} className="flex flex-col items-center min-w-[70px] p-2"><div className={`p-2 rounded-full ${activeTab === 'tools' ? 'bg-purple-600 text-white' : 'text-zinc-500'}`}><Wrench size={20} /></div><span className="text-[10px] mt-1 text-zinc-400">Tools</span></button>
            <button onClick={() => setActiveTab("download")} className="flex flex-col items-center min-w-[70px] p-2"><div className={`p-2 rounded-full ${activeTab === 'download' ? 'bg-purple-600 text-white' : 'text-zinc-500'}`}><DownloadCloud size={20} /></div><span className="text-[10px] mt-1 text-zinc-400">Download</span></button>
            <button onClick={() => setActiveTab("osint")} className="flex flex-col items-center min-w-[70px] p-2"><div className={`p-2 rounded-full ${activeTab === 'osint' ? 'bg-purple-600 text-white' : 'text-zinc-500'}`}><Search size={20} /></div><span className="text-[10px] mt-1 text-zinc-400">OSINT</span></button>
