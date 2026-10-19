@@ -6,7 +6,7 @@ import {
   MessageSquare, Bell, Plus, Heart, Calendar, Wrench, 
   DownloadCloud, Search, Bug, Send, X, ChevronLeft, 
   ShieldAlert, Globe, Smartphone, FileText, Play, Pause, Gamepad2, Music, CheckCircle2,
-  Dices, Swords, Bot, Grid3X3, Crown, CircleDollarSign, Users, Puzzle, Globe2
+  Dices, Swords, Bot, Grid3X3, Crown, CircleDollarSign, Users, Puzzle, Globe2, CreditCard
 } from "lucide-react";
 
 const API_URL = "https://api-mikasacloud.my.id";
@@ -282,19 +282,47 @@ export default function Home() {
       );
     }
 
+    // --- DATA MENU LENGKAP ---
     const menuData = {
-      tools: [{ title: "Cek NPSN", desc: "Cari data sekolah", icon: <FileText size={24} className="text-blue-400" />, endpoint: "/api/ceknpsn", payload: { npsn: target } }],
-      osint: [{ title: "OSINT Nomor", desc: "Lacak info nomor HP", icon: <Search size={24} className="text-yellow-400" />, endpoint: "/api/osint-nomor", payload: { nomor: target } }],
-      download: [{ title: "TikTok DL", desc: "Unduh video TikTok", icon: <DownloadCloud size={24} className="text-pink-400" />, endpoint: "/api/download/tiktok", payload: { url: target } }],
-      spam: [{ title: "Spam OTP", desc: "Kirim OTP massal", icon: <MessageSquare size={24} className="text-blue-400" />, endpoint: "/api/spamotp", payload: { nomor: target } }],
-      bug: [{ title: "Bug WA", desc: "Kirim bug WhatsApp", icon: <Bug size={24} className="text-red-500" />, endpoint: "/api/bug-wa", payload: { target: target, senderId: username, type: "verload" } }]
+      tools: [
+        { title: "Cek NPSN", desc: "Cari data sekolah", icon: <FileText size={24} className="text-blue-400" />, endpoint: "/api/ceknpsn", payload: { npsn: target } },
+        { title: "Cek IMEI", desc: "Spesifikasi HP", icon: <Smartphone size={24} className="text-green-400" />, endpoint: "/api/cekimei", payload: { imei: target } },
+        { title: "Cek FreeFire", desc: "Cek akun FF", icon: <Gamepad2 size={24} className="text-yellow-400" />, endpoint: "/api/cekff", payload: { uid: target } },
+        { title: "Cek Roblox", desc: "Cek akun Roblox", icon: <Gamepad2 size={24} className="text-red-400" />, endpoint: "/api/cekroblox", payload: { username: target } },
+        { title: "Cek Resi", desc: "Lacak paket", icon: <FileText size={24} className="text-orange-400" />, endpoint: "/api/cekresi", payload: { courier: "jne", awb: target } }
+      ],
+      osint: [
+        { title: "OSINT Nomor", desc: "Lacak nomor HP", icon: <Search size={24} className="text-yellow-400" />, endpoint: "/api/osint-nomor", payload: { nomor: target } },
+        { title: "OSINT IP", desc: "Lacak IP Address", icon: <Globe size={24} className="text-blue-400" />, endpoint: "/api/osint-ip", payload: { ip: target } },
+        { title: "NIK Parse", desc: "Bongkar data NIK", icon: <User size={24} className="text-purple-400" />, endpoint: "/api/nikparse", payload: { nik: target } },
+        { title: "Cek E-Wallet", desc: "Cek kepemilikan wallet", icon: <CreditCard size={24} className="text-green-400" />, endpoint: "/api/cekwallet", payload: { nomor: target } },
+        { title: "Cek Band WA", desc: "Cek banned WA", icon: <ShieldAlert size={24} className="text-red-400" />, endpoint: "/api/cekbandwa", payload: { nomor: target } }
+      ],
+      download: [
+        { title: "TikTok DL", desc: "Unduh video TikTok", icon: <DownloadCloud size={24} className="text-pink-400" />, endpoint: "/api/download/tiktok", payload: { url: target } },
+        { title: "Instagram DL", desc: "Unduh foto/video IG", icon: <DownloadCloud size={24} className="text-purple-400" />, endpoint: "/api/download/instagram", payload: { url: target } },
+        { title: "Facebook DL", desc: "Unduh video FB", icon: <DownloadCloud size={24} className="text-blue-400" />, endpoint: "/api/download/facebook", payload: { url: target } },
+        { title: "Spotify DL", desc: "Unduh lagu Spotify", icon: <Music size={24} className="text-green-400" />, endpoint: "/api/download/spotify", payload: { url: target } }
+      ],
+      spam: [
+        { title: "Spam OTP", desc: "Kirim OTP massal", icon: <MessageSquare size={24} className="text-blue-400" />, endpoint: "/api/spamotp", payload: { nomor: target } },
+        { title: "Spam Call", desc: "Kirim panggilan", icon: <Smartphone size={24} className="text-green-400" />, endpoint: "/api/spamcall", payload: { nomor: target } },
+        { title: "Spam Pair", desc: "Kirim kode pairing", icon: <FileText size={24} className="text-yellow-400" />, endpoint: "/api/spampair", payload: { nomor: target } },
+        { title: "Spam Report WA", desc: "Laporkan WA target", icon: <ShieldAlert size={24} className="text-red-400" />, endpoint: "/api/spamrepwa", payload: { nomor: target } }
+      ],
+      bug: [
+        { title: "Verload FC", desc: "Force Close", icon: <Bug size={24} className="text-red-500" />, endpoint: "/api/bug-wa", payload: { target: target, senderId: username, type: "verload" } },
+        { title: "Invisible FC", desc: "Invisible Crash", icon: <Bug size={24} className="text-purple-500" />, endpoint: "/api/bug-wa", payload: { target: target, senderId: username, type: "invisible" } },
+        { title: "Crash Calls", desc: "Bug panggilan", icon: <Bug size={24} className="text-yellow-500" />, endpoint: "/api/bug-wa", payload: { target: target, senderId: username, type: "crashcalls" } },
+        { title: "Button Crash", desc: "Tombol rusak", icon: <Bug size={24} className="text-blue-500" />, endpoint: "/api/bug-wa", payload: { target: target, senderId: username, type: "button" } }
+      ]
     };
 
     const items = menuData[activeTab] || [];
     return (
       <main className="px-4 max-w-md mx-auto mt-4 space-y-4">
         {items.map((item, idx) => (
-          <div key={idx} onClick={() => setSelectedTool(item)} className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover:border-purple-600 transition-all">
+          <div key={idx} onClick={() => setSelectedTool(item)} className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover:border-purple-600 transition-all shadow-lg">
             <div className="w-14 h-14 rounded-2xl bg-[#0f0a15] border border-[#2a2136] flex items-center justify-center flex-shrink-0">{item.icon}</div>
             <div className="flex-1"><h3 className="text-white font-bold text-sm">{item.title}</h3><p className="text-xs text-zinc-400 mt-1">{item.desc}</p></div>
             <div className="bg-purple-600 p-2 rounded-full text-white"><ArrowRight size={16} /></div>
