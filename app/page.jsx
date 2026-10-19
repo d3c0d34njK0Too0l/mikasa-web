@@ -284,7 +284,7 @@ function GameCatur({ onClose }) {
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function Home() {
+export default function MainApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [username, setUsername] = useState("");
