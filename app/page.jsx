@@ -8,7 +8,8 @@ import {
   FileText, Play, Pause, Gamepad2, Music, CheckCircle2, 
   Dices, Bot, Grid3X3, Crown, CircleDollarSign, Users, 
   Puzzle, Globe2, Loader2, LogOut, Settings, Camera,
-  Clock, Shield, Phone, Terminal
+  Clock, Shield, Phone, Terminal, Link, Mail, MapPin, 
+  CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch
 } from "lucide-react";
 
 // IMPORT GAME ENGINE
@@ -21,32 +22,36 @@ const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
 
 let globalAudio = null;
 
-// SEMUA TOOLS LANGSUNG DI HOME (DENGAN EMOJI)
+// SEMUA TOOLS (PAKE LUCIDE ICONS & WARNA)
 const ALL_TOOLS = [
-  { id: 'spamotp', name: "Spam OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "💥" },
-  { id: 'spamcall', name: "Spam Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "📞" },
-  { id: 'spampair', name: "Spam Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "🔗" },
-  { id: 'spamngl', name: "Spam NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", emoji: "🕵️" },
-  { id: 'spamrepwa', name: "Spam Rep WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", emoji: "🚨" },
-  { id: 'spamgmail', name: "Spam Gmail", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", emoji: "📧" },
-  { id: 'osintnomor', name: "OSINT Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", emoji: "📱" },
-  { id: 'osintusername', name: "OSINT Usr", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", emoji: "👤" },
-  { id: 'iptracker', name: "IP Tracker", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", emoji: "🌐" },
-  { id: 'portscan', name: "Port Scan", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", emoji: "🚪" },
-  { id: 'nikparse', name: "NIK Parse", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", emoji: "🪪" },
-  { id: 'cekwallet', name: "Cek Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", emoji: "💳" },
-  { id: 'bug-wa-verload', name: "Verload FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", emoji: "💀", extra: {type: "verload"} },
-  { id: 'bug-wa-forceclose', name: "Force Close", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", emoji: "💣", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Calls", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", emoji: "🔪", extra: {type: "crashcalls"} },
-  { id: 'tt', name: "TikTok DL", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", emoji: "🎵" },
-  { id: 'ig', name: "IG DL", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", emoji: "📸" },
-  { id: 'fb', name: "FB DL", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", emoji: "📘" },
-  { id: 'cekkodepos', name: "Kode Pos", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", emoji: "📮" },
-  { id: 'ceknpsn', name: "Cek NPSN", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", emoji: "🏫" },
-  { id: 'cekff', name: "Cek FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", emoji: "🔥" },
-  { id: 'cekroblox', name: "Cek Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", emoji: "🎮" },
-  { id: 'gtk', name: "Data GTK", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", emoji: "👨‍🏫" },
-  { id: 'cekbandwa', name: "Cek Band", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", emoji: "🚫" },
+  { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500", bg: "border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]" },
+  { id: 'spamcall', name: "Spam Call", sub: "Bomb Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Phone, color: "text-red-500", bg: "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]" },
+  { id: 'spampair', name: "Spam Pair", sub: "Bomb Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Link, color: "text-orange-500", bg: "border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)]" },
+  { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500", bg: "border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]" },
+  { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500", bg: "border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.3)]" },
+  { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400", bg: "border-blue-400/50 shadow-[0_0_10px_rgba(96,165,250,0.3)]" },
+  
+  { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500", bg: "border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]" },
+  { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500", bg: "border-teal-500/50 shadow-[0_0_10px_rgba(20,184,166,0.3)]" },
+  { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500", bg: "border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]" },
+  { id: 'portscan', name: "Port Scan", sub: "Scan Port", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Server, color: "text-violet-500", bg: "border-violet-500/50 shadow-[0_0_10px_rgba(139,92,246,0.3)]" },
+  { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500", bg: "border-fuchsia-500/50 shadow-[0_0_10px_rgba(217,70,239,0.3)]" },
+  { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500", bg: "border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]" },
+  
+  { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", bg: "border-red-600/50 shadow-[0_0_10px_rgba(220,38,38,0.3)]", extra: {type: "verload"} },
+  { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", bg: "border-orange-600/50 shadow-[0_0_10px_rgba(234,88,12,0.3)]", extra: {type: "forceclose"} },
+  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", bg: "border-rose-600/50 shadow-[0_0_10px_rgba(225,29,72,0.3)]", extra: {type: "crashcalls"} },
+  
+  { id: 'tt', name: "TikTok DL", sub: "Unduh Video", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400", bg: "border-pink-400/50 shadow-[0_0_10px_rgba(244,114,182,0.3)]" },
+  { id: 'ig', name: "IG DL", sub: "Unduh Foto", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400", bg: "border-purple-400/50 shadow-[0_0_10px_rgba(192,132,252,0.3)]" },
+  { id: 'fb', name: "FB DL", sub: "Unduh Video", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600", bg: "border-blue-600/50 shadow-[0_0_10px_rgba(37,99,235,0.3)]" },
+  
+  { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500", bg: "border-lime-500/50 shadow-[0_0_10px_rgba(132,204,22,0.3)]" },
+  { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500", bg: "border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]" },
+  { id: 'cekff', name: "Cek FF", sub: "Nickname FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500", bg: "border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.3)]" },
+  { id: 'cekroblox', name: "Cek Roblox", sub: "Nickname Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", icon: Gamepad2, color: "text-red-400", bg: "border-red-400/50 shadow-[0_0_10px_rgba(248,113,113,0.3)]" },
+  { id: 'gtk', name: "Data GTK", sub: "Cari Guru", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", icon: Users, color: "text-sky-500", bg: "border-sky-500/50 shadow-[0_0_10px_rgba(14,165,233,0.3)]" },
+  { id: 'cekbandwa', name: "Cek Band", sub: "Status WA", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", icon: Ban, color: "text-red-700", bg: "border-red-700/50 shadow-[0_0_10px_rgba(185,28,28,0.3)]" },
 ];
 
 const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
@@ -335,9 +340,9 @@ export default function Home() {
     </>
   );
 
-  // --- MODAL PROFILE (FIXED NYANGKUT) ---
+  // --- MODAL PROFILE ---
   const renderProfileModal = () => {
-    if (!showProfileModal) return null; // FIX: Biar gabisa nyangkut
+    if (!showProfileModal) return null; 
 
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
@@ -349,7 +354,6 @@ export default function Home() {
               <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-500 overflow-hidden">
                 {userProfile.avatar ? <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-zinc-500 m-auto mt-4" />}
               </div>
-              {/* Label Input Full Cover */}
               <label className="absolute top-0 w-24 h-24 rounded-full cursor-pointer bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                   <Camera size={24} className="text-white" />
                   <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
@@ -444,11 +448,9 @@ export default function Home() {
       </header>
 
       {renderSidebar()}
-      
-      {/* FIX: Modal cuma muncul kalo state true */}
-      {showProfileModal && renderProfileModal()}
-      {activeTool && renderToolModal()}
-      {showSenderModal && renderSenderModal()}
+      {renderProfileModal()}
+      {renderToolModal()}
+      {renderSenderModal()}
 
       {/* RENDER GAME MODALS */}
       {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
@@ -577,7 +579,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ALL TOOLS (LANGSUNG DI HOME) */}
+            {/* ALL TOOLS (DENGAN DESAIN LUCIDE CARD) */}
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Semua Fitur</h3>
               
@@ -602,12 +604,19 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Grid Tools */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* Grid Tools (Desain Baru) */}
+              <div className="grid grid-cols-2 gap-3">
                 {ALL_TOOLS.filter(t => toolCategory === "Semua" || t.cat === toolCategory).map((tool) => (
-                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors h-20">
-                    <span className="text-lg mb-1">{tool.emoji}</span>
-                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{tool.name}</span>
+                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-3 flex items-center gap-3 hover:bg-zinc-800 transition-colors text-left">
+                    {/* Icon Wrapper */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border bg-black/30 ${tool.bg}`}>
+                      <tool.icon size={20} className={tool.color} />
+                    </div>
+                    {/* Text */}
+                    <div className="flex flex-col">
+                      <span className="text-xs text-white font-bold">{tool.name}</span>
+                      <span className="text-[9px] text-zinc-500">{tool.sub}</span>
+                    </div>
                   </button>
                 ))}
               </div>
