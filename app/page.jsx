@@ -10,7 +10,7 @@ import {
   Puzzle, Globe2, Loader2, LogOut, Settings, Camera,
   Clock, Shield, Phone, Terminal, Link, Mail, MapPin, 
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
-  PlayCircle, Database
+  PlayCircle, Database, Fingerprint
 } from "lucide-react";
 
 import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
@@ -45,7 +45,7 @@ const ALL_TOOLS = [
   
   { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
   { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashcalls"} },
+  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
   
   { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
   { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
@@ -65,6 +65,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false); 
   const [showTapToPlay, setShowTapToPlay] = useState(false); 
+  const [isScanning, setIsScanning] = useState(false); // State animasi sidik jari
   
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -90,7 +91,7 @@ export default function Home() {
   const [privateMsgs, setPrivateMsgs] = useState([]);
 
   const [toolCategory, setToolCategory] = useState("Semua");
-  const [activeTool, setActiveTool] = useState(null); // State buat halaman tools
+  const [activeTool, setActiveTool] = useState(null); 
   
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
@@ -174,9 +175,17 @@ export default function Home() {
     setShowTapToPlay(false); 
   };
 
-  const handleTapToPlay = () => {
-    startBGM();
-    setShowTapToPlay(false);
+  // FUNGSI ANIMASI SIDIK JARI
+  const handleFingerprintTap = () => {
+    if (isScanning) return;
+    setIsScanning(true);
+    
+    // Delay bentar buat nampilin animasi centang
+    setTimeout(() => {
+      startBGM();
+      setShowTapToPlay(false);
+      setIsScanning(false);
+    }, 1500);
   };
 
   const handleLogout = () => {
@@ -335,6 +344,68 @@ export default function Home() {
     }
   };
 
+  // --- FUNGSI RENDER HASIL TOOL (UI BAGUS) ---
+  const renderToolResult = (data) => {
+    if (!data) return null;
+
+    const renderValue = (val) => {
+      if (val === null) return <span className="text-zinc-500 italic">null</span>;
+      if (typeof val === 'boolean') return <span className={val ? "text-green-400" : "text-red-400"}>{val.toString()}</span>;
+      if (typeof val === 'string' || typeof val === 'number') return <span className="text-white break-words">{val.toString()}</span>;
+      
+      if (Array.isArray(val)) {
+        if (val.length === 0) return <span className="text-zinc-500 italic">Kosong</span>;
+        return (
+          <div className="pl-3 border-l border-zinc-700 mt-1 space-y-2">
+            {val.map((item, i) => (
+              <div key={i} className="text-xs">
+                <span className="text-zinc-500 mr-2">#{i + 1}</span>
+                {renderValue(item)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (typeof val === 'object') {
+        return (
+          <div className="pl-3 border-l border-zinc-700 mt-1 space-y-1">
+            {Object.entries(val).map(([k, v]) => (
+              <div key={k} className="flex flex-col sm:flex-row sm:items-start gap-1">
+                <span className="text-zinc-400 text-xs capitalize min-w-[100px]">{k.replace(/_/g, ' ')}</span>
+                <span className="text-xs flex-1">{renderValue(v)}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return null;
+    };
+
+    return (
+      <div className="mt-4 bg-[#16111e] border border-zinc-700 rounded-xl p-4 overflow-hidden">
+        <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2 border-b border-zinc-700 pb-2">
+          <CheckCircle2 size={16} className="text-green-500" /> Hasil Eksekusi
+        </h4>
+        <div className="space-y-2">
+           {Object.entries(data).map(([key, value]) => {
+             if (key === 'status' && value === true) return null;
+             
+             return (
+               <div key={key} className="flex flex-col">
+                 <span className="text-zinc-400 text-xs font-bold capitalize mb-1">{key.replace(/_/g, ' ')}</span>
+                 <div className="bg-black/40 p-2 rounded-lg border border-zinc-800">
+                    {renderValue(value)}
+                 </div>
+               </div>
+             );
+           })}
+        </div>
+      </div>
+    );
+  };
+
+
   // --- RENDERS ---
   if (showIntro) {
     return (
@@ -378,7 +449,7 @@ export default function Home() {
     );
   }
 
-  // --- HALAMAN TOOLS (BUKAN POPUP LAGI) ---
+  // --- HALAMAN TOOLS ---
   if (activeTool) {
     return (
       <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
@@ -448,11 +519,9 @@ export default function Home() {
             <button onClick={executeTool} disabled={toolLoading} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
               {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
             </button>
-            {toolResult && (
-              <div className="mt-4 bg-black border border-zinc-700 p-3 rounded-lg max-h-40 overflow-y-auto">
-                <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap">{JSON.stringify(toolResult, null, 2)}</pre>
-              </div>
-            )}
+            
+            {/* HASIL EKSEKUSI BAGUS */}
+            {toolResult && renderToolResult(toolResult)}
           </div>
         </main>
       </div>
@@ -536,11 +605,34 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
+      {/* OVERLAY FINGERPRINT (BUKAN POPUP) */}
       {showTapToPlay && (
-        <div onClick={handleTapToPlay} className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer">
-          <PlayCircle size={80} className="text-zinc-500 mb-6 animate-pulse" />
-          <h2 className="text-white text-xl font-bold mb-2">Ketuk Layar untuk Mulai</h2>
-          <p className="text-zinc-400 text-sm">Untuk mengaktifkan suara & BGM</p>
+        <div 
+          onClick={handleFingerprintTap} 
+          className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-500"
+        >
+          {/* Animasi Sidik Jari */}
+          <div className={`relative flex items-center justify-center w-32 h-32 rounded-full border-2 transition-all duration-300 ${isScanning ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]' : 'border-zinc-600'}`}>
+             {/* Ikon Sidik Jari */}
+             <Fingerprint 
+                size={64} 
+                className={`transition-colors duration-300 ${isScanning ? 'text-green-500' : 'text-zinc-400'}`} 
+             />
+             
+             {/* Animasi Centang Muncul */}
+             {isScanning && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm">
+                   <CheckCircle2 size={64} className="text-green-500 animate-in zoom-in spin-in-12 duration-500" />
+                </div>
+             )}
+          </div>
+
+          <h2 className={`text-white text-xl font-bold mt-8 transition-colors duration-300 ${isScanning ? 'text-green-400' : 'text-white'}`}>
+            {isScanning ? "Autentikasi Berhasil" : "Sentuh Sidik Jari"}
+          </h2>
+          <p className="text-zinc-500 text-sm mt-2">
+            {isScanning ? "Menyiapkan antarmuka..." : "Untuk membuka akses"}
+          </p>
         </div>
       )}
 
