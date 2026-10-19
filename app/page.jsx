@@ -10,7 +10,7 @@ export default function Home() {
   const [senderId, setSenderId] = useState("");
   const [bugType, setBugType] = useState("verload");
 
-  const API_URL = "https://veterans-stations-subsidiaries-g-radially.trycloudflare.com";
+  const API_URL = "https://lil-willow-compensation-their.trycloudflare.com";
   const API_KEY = "rahasia_banget_123";
 
   const handleRequest = async (endpoint, payload) => {
