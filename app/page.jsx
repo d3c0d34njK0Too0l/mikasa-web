@@ -18,6 +18,56 @@ const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
 
 let globalAudio = null;
 
+// DATA FITUR ASLI DARI INDEX.JS LU
+const TOOL_CATEGORIES = {
+  spam: [
+    { id: 'spamotp', name: "Spam OTP", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx" },
+    { id: 'spamcall', name: "Spam Call", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx" },
+    { id: 'spampair', name: "Spam Pairing", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx" },
+    { id: 'spamngl', name: "Spam NGL", endpoint: "/api/spamngl", payload: "username", placeholder: "username_ngl" },
+    { id: 'spamrepwa', name: "Spam Rep WA", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx" },
+    { id: 'spamgmail', name: "Spam Gmail", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com" },
+    { id: 'spambottele', name: "Spam Bot Tele", endpoint: "/api/spambottele", payload: "target", placeholder: "Token|ID|Pesan" },
+  ],
+  osint: [
+    { id: 'osintnomor', name: "OSINT Nomor", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx" },
+    { id: 'osintusername', name: "OSINT Username", endpoint: "/api/osint-username", payload: "username", placeholder: "username" },
+    { id: 'osintip', name: "OSINT IP", endpoint: "/api/osint-ip", payload: "ip", placeholder: "8.8.8.8" },
+    { id: 'osintdomain', name: "OSINT Domain", endpoint: "/api/osint-domain", payload: "domain", placeholder: "google.com" },
+    { id: 'iptracker', name: "IP Tracker", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8" },
+    { id: 'portscan', name: "Port Scan", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com" },
+    { id: 'nikparse', name: "NIK Parse", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit NIK" },
+    { id: 'cekwallet', name: "Cek Wallet", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx" }
+  ],
+  bug: [
+    { id: 'bug-wa-verload', name: "Verload FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "verload"} },
+    { id: 'bug-wa-forceclose', name: "Force Close", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "forceclose"} },
+    { id: 'bug-wa-crashcall', name: "Crash Calls", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "crashcalls"} },
+    { id: 'bug-wa-invisible', name: "Invisible FC", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", extra: {type: "invisible"} },
+  ],
+  download: [
+    { id: 'tt', name: "TikTok DL", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok" },
+    { id: 'ig', name: "Instagram DL", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG" },
+    { id: 'fb', name: "Facebook DL", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB" },
+    { id: 'gitdl', name: "GitHub DL", endpoint: "/api/download/github", payload: "url", placeholder: "Link Repo GitHub" },
+  ],
+  utility: [
+    { id: 'cekkodepos', name: "Cek Kode Pos", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112" },
+    { id: 'ceknpsn', name: "Cek NPSN", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594" },
+    { id: 'cekff', name: "Cek FF", endpoint: "/api/cekff", payload: "uid", placeholder: "UID Free Fire" },
+    { id: 'cekroblox', name: "Cek Roblox", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username Roblox" },
+    { id: 'gtk', name: "Data GTK", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK/NIK" },
+    { id: 'cekbandwa', name: "Cek Band WA", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx" },
+    { id: 'cekresi', name: "Cek Resi", endpoint: "/api/cekresi", payload: "resi", placeholder: "Kurir|No Resi" },
+  ],
+  tools: [
+    { id: 'ssweb', name: "SS Web", endpoint: "/api/ssweb", payload: "url", placeholder: "https://..." },
+    { id: 'qrcustom', name: "QR Custom", endpoint: "/api/qrcustom", payload: "data", placeholder: "Teks/Link" },
+    { id: 'tempmail', name: "Temp Mail", endpoint: "/api/tempmail", payload: "action", placeholder: "create/inbox" },
+    { id: 'shortener', name: "Shortener URL", endpoint: "/api/shortenerurl", payload: "url", placeholder: "Link Panjang" },
+  ]
+};
+
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
@@ -41,20 +91,19 @@ export default function Home() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [globalMsgs, setGlobalMsgs] = useState([]);
   const [msgInput, setMsgInput] = useState("");
-  const [chatMode, setChatMode] = useState("global"); // "global" | "private"
-  const [chatTarget, setChatTarget] = useState(null); // User ID untuk DM
+  const [chatMode, setChatMode] = useState("global"); 
+  const [chatTarget, setChatTarget] = useState(null); 
   const [privateMsgs, setPrivateMsgs] = useState([]);
 
   // Tool State
-  const [activeTool, setActiveTool] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null); // Kategori yang dipilih (spam, osint, dll)
+  const [activeTool, setActiveTool] = useState(null); // Fitur spesifik yang dipilih (spamotp, spamcall)
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
   const [toolLoading, setToolLoading] = useState(false);
 
   // Game State
   const [activeGame, setActiveGame] = useState(null);
-  const [gameLevel, setGameLevel] = useState("easy");
-  // Game Engine States
   const [board, setBoard] = useState(Array(9).fill(null));
   const [turn, setTurn] = useState('X');
   const [unoDeck, setUnoDeck] = useState(["merah 5", "biru 7", "hijau 2", "kuning 9"]);
@@ -123,7 +172,7 @@ export default function Home() {
     if(socket) socket.close();
   };
 
-  // --- SOCKET CHAT (GLOBAL & PRIVATE) ---
+  // --- SOCKET CHAT ---
   useEffect(() => {
     if (isLoggedIn) {
       const newSocket = io(API_URL);
@@ -165,7 +214,7 @@ export default function Home() {
   const openPrivateChat = (targetUser) => {
     setChatTarget(targetUser);
     setChatMode("private");
-    setPrivateMsgs([]); // Clear previous chat
+    setPrivateMsgs([]); 
     setActiveTab("chat");
   };
 
@@ -228,27 +277,40 @@ export default function Home() {
     }
   };
 
-  // --- TOOLS REQUEST ---
+  // --- DYNAMIC TOOL EXECUTE ---
   const executeTool = async () => {
     if (!activeTool || !toolTarget) return;
     setToolLoading(true);
     setToolResult(null);
+
+    // Bikin payload dinamis berdasarkan input user
+    let payloadBody = {};
+    if (activeTool.extra) Object.assign(payloadBody, activeTool.extra);
+    payloadBody[activeTool.payload] = toolTarget;
+    
+    // Handle spesifik buat beberapa endpoint yg butuh key tambahan
+    if (activeTool.id === 'spamgmail') payloadBody.email = toolTarget;
+    if (activeTool.id === 'cekresi') {
+        const parts = toolTarget.split('|');
+        payloadBody.kurir = parts[0]; payloadBody.resi = parts[1];
+    }
+
     try {
       const res = await fetch(`${API_URL}${activeTool.endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
-        body: JSON.stringify({ ...activeTool.payload, target: toolTarget })
+        body: JSON.stringify(payloadBody)
       });
       const data = await res.json();
       setToolResult(data);
     } catch (err) {
-      setToolResult({ status: false, error: "Gagal terhubung ke API" });
+      setToolResult({ status: false, error: "Gagal terhubung ke API. Cek Tunnel Pterodactyl lu." });
     } finally {
       setToolLoading(false);
     }
   };
 
-  // --- GAME LOGIC (TicTacToe) ---
+  // --- GAME LOGIC ---
   const checkTicTacToeWin = (b) => {
     const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     for (let line of lines) {
@@ -257,29 +319,21 @@ export default function Home() {
     return b.includes(null) ? null : 'Draw';
   };
 
-  const npcTicTacToeMove = (currentBoard) => {
-    const empty = currentBoard.map((v, i) => v === null ? i : null).filter(v => v !== null);
-    if (!empty.length) return;
-    let move = empty[Math.floor(Math.random() * empty.length)];
-    if (gameLevel === 'hard') {
-      for (let i of empty) {
-        let temp = [...currentBoard]; temp[i] = 'O';
-        if (checkTicTacToeWin(temp) === 'O') { move = i; break; }
-      }
-    }
-    const newBoard = [...currentBoard];
-    newBoard[move] = 'O';
-    setBoard(newBoard);
-    setTurn('X');
-  };
-
   const handleTicTacToeClick = (i) => {
     if (board[i] || checkTicTacToeWin(board) || !activeGame) return;
     const newBoard = [...board];
     newBoard[i] = 'X';
     setBoard(newBoard);
     setTurn('O');
-    setTimeout(() => npcTicTacToeMove(newBoard), 500);
+    setTimeout(() => {
+      const empty = newBoard.map((v, idx) => v === null ? idx : null).filter(v => v !== null);
+      if (!empty.length) return;
+      const move = empty[Math.floor(Math.random() * empty.length)];
+      const finalBoard = [...newBoard];
+      finalBoard[move] = 'O';
+      setBoard(finalBoard);
+      setTurn('X');
+    }, 500);
   };
 
   // --- RENDERS ---
@@ -362,7 +416,6 @@ export default function Home() {
 
   const renderGameModal = () => {
     if (!activeGame) return null;
-
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
@@ -435,14 +488,13 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-zinc-500 text-center">*Visual Mode. Logic full butuh library tambahan.</p>
+              <p className="text-xs text-zinc-500 text-center">*Visual Mode.</p>
             </div>
           )}
         </div>
       </div>
     );
   };
-
 
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
@@ -453,7 +505,7 @@ export default function Home() {
           <Menu size={24} />
         </button>
         <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">
-          {activeTab === "home" ? `Hello, ${userProfile.name}` : activeTab}
+          {activeCategory ? `Menu ${activeCategory}` : activeTab === "home" ? `Hello, ${userProfile.name}` : activeTab}
         </h1>
         <button onClick={() => setShowProfileModal(true)} className="w-10 h-10 rounded-full border border-zinc-500 overflow-hidden bg-zinc-800 flex items-center justify-center">
            {userProfile.avatar ? <img src={userProfile.avatar} className="w-full h-full object-cover"/> : <User size={20} className="text-zinc-400"/>}
@@ -466,10 +518,25 @@ export default function Home() {
 
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
         
+        {/* TAMPILAN MENU FITUR (KALO KATEGORI DIKLIK) */}
+        {activeCategory && (
+          <div>
+            <button onClick={() => setActiveCategory(null)} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Home</button>
+            <div className="space-y-2">
+              {TOOL_CATEGORIES[activeCategory].map((tool) => (
+                <button key={tool.id} onClick={() => setActiveTool(tool)} className="w-full bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex items-center justify-between hover:bg-zinc-800 transition-colors">
+                  <span className="text-white font-medium">{tool.name}</span>
+                  <ArrowRight size={16} className="text-zinc-500" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* TAB HOME */}
-        {activeTab === "home" && (
+        {activeTab === "home" && !activeCategory && (
           <>
-            {/* 1. KARTU JAM */}
+            {/* KARTU JAM */}
             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
               <div className="inline-block bg-zinc-700/50 border border-zinc-600 text-zinc-300 text-[10px] font-bold px-3 py-1 rounded-full mb-4 tracking-widest">
@@ -494,7 +561,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 5. REAL-TIME USER LIST (Gambar 3) */}
+            {/* REAL-TIME USER LIST */}
             <div>
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-xs font-bold text-zinc-400 tracking-wider">PENGGUNA ONLINE</h3>
@@ -520,7 +587,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 2. 3 TOMBOL BARIS */}
+            {/* 3 TOMBOL BARIS */}
             <div className="grid grid-cols-3 gap-2">
               <button onClick={() => { setChatMode("global"); setActiveTab("chat"); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
                 <MessageSquare size={20} className="text-white" />
@@ -536,7 +603,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 3. MUSIC PLAYER */}
+            {/* MUSIC PLAYER */}
             <div>
               <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
               <div onClick={() => setShowMusicLibrary(true)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-zinc-500 transition-all">
@@ -555,14 +622,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 4. VIDEO BANNER */}
+            {/* VIDEO BANNER */}
             <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
               <video autoPlay muted loop playsInline className="w-full h-full object-cover">
                 <source src={VIDEO_2} type="video/mp4" />
               </video>
             </div>
 
-            {/* 5. STATISTIK AKUN */}
+            {/* STATISTIK AKUN */}
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-zinc-400"/> Statistik Akun</h3>
               <div className="grid grid-cols-3 gap-2">
@@ -584,22 +651,21 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 6. TOOLS GRID */}
+            {/* KATEGORI TOOLS GRID */}
             <div>
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Tools</h3>
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Kategori Tools</h3>
               <div className="grid grid-cols-4 gap-3">
                 {[
-                  { id: 'bugwa', name: "Bug WA", icon: Bug, color: "text-red-500", endpoint: "/api/bug-wa", placeholder: "62xxx" },
-                  { id: 'osint', name: "OSINT", icon: Search, color: "text-blue-500", endpoint: "/api/osint-nomor", placeholder: "62xxx" },
-                  { id: 'spam', name: "Spam OTP", icon: MessageSquare, color: "text-emerald-500", endpoint: "/api/spamotp", placeholder: "62xxx" },
-                  { id: 'downloader', name: "Download", icon: DownloadCloud, color: "text-pink-500", endpoint: "/api/download/tiktok", placeholder: "Link TikTok" },
-                  { id: 'cekband', name: "Cek Band", icon: Shield, color: "text-yellow-500", endpoint: "/api/cekbandwa", placeholder: "62xxx" },
-                  { id: 'gtk', name: "Data GTK", icon: FileText, color: "text-purple-500", endpoint: "/api/cekdataguru", placeholder: "Nama/NUPTK" },
-                  { id: 'webrecon', name: "Web Recon", icon: Globe, color: "text-cyan-500", endpoint: "/api/webrecon", placeholder: "domain.com" },
-                ].map((tool) => (
-                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
-                    <tool.icon size={20} className={`${tool.color} mb-2`} />
-                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{tool.name}</span>
+                  { id: 'bug', name: "Bug WA", icon: Bug, color: "text-red-500" },
+                  { id: 'osint', name: "OSINT", icon: Search, color: "text-blue-500" },
+                  { id: 'spam', name: "Spam", icon: MessageSquare, color: "text-emerald-500" },
+                  { id: 'download', name: "Download", icon: DownloadCloud, color: "text-pink-500" },
+                  { id: 'utility', name: "Utility", icon: Shield, color: "text-yellow-500" },
+                  { id: 'tools', name: "Tools Lain", icon: FileText, color: "text-purple-500" },
+                ].map((cat) => (
+                  <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
+                    <cat.icon size={20} className={`${cat.color} mb-2`} />
+                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{cat.name}</span>
                   </button>
                 ))}
               </div>
@@ -607,10 +673,9 @@ export default function Home() {
           </>
         )}
 
-        {/* TAB CHAT (GLOBAL & PRIVATE) */}
+        {/* TAB CHAT */}
         {activeTab === "chat" && (
           <div className="fixed inset-0 bg-[#0f0a15] z-40 flex flex-col pt-16 pb-20">
-            {/* Header Chat */}
             <div className="absolute top-0 left-0 w-full h-16 bg-[#0f0a15]/90 backdrop-blur-md flex items-center px-4 border-b border-zinc-800">
               <button onClick={() => setActiveTab("home")} className="p-2 mr-2 text-white">
                 <ChevronLeft size={24} />
@@ -670,7 +735,7 @@ export default function Home() {
              { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
              { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
            ].map((item) => (
-             <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
+             <button key={item.id} onClick={() => { setActiveTab(item.id); setActiveCategory(null); }} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
                <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-zinc-700 text-white' : ''}`}>{item.icon}</div>
                <span className="text-[10px]">{item.label}</span>
              </button>
@@ -712,7 +777,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
