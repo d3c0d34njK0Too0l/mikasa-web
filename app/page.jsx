@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { 
   Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
@@ -47,7 +47,6 @@ export default function Home() {
   // Music State
   const [musicQuery, setMusicQuery] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
 
   // --- LOGIN ---
   const handleLogin = async (e) => {
@@ -114,7 +113,6 @@ export default function Home() {
         </video>
         <audio autoPlay><source src={INTRO_AUDIO} type="audio/mpeg" /></audio>
         
-        {/* TOMBOL SKIP DISINI BANG */}
         <button 
           onClick={() => { setShowIntro(false); setIsLoggedIn(true); }} 
           className="absolute top-6 right-6 bg-black/60 border border-zinc-600 text-white px-5 py-2 rounded-full text-sm font-bold z-50 backdrop-blur-md shadow-lg hover:bg-black/80 transition-all"
@@ -152,14 +150,16 @@ export default function Home() {
     );
   }
 
-  // --- HALAMAN HOME ---
+  // --- HALAMAN HOME (FITUR LENGKAP) ---
   const renderHome = () => (
     <main className="px-4 max-w-md mx-auto space-y-5">
+      {/* Video Banner */}
       <div className="w-full h-44 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
         <video key={videoIndex} src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => videoIndex === 0 && setVideoIndex(1)} loop={videoIndex === 1} />
         <div className="absolute bottom-4 left-4 z-10"><h2 className="text-white font-bold text-lg">Mikasa Project</h2></div>
       </div>
       
+      {/* Kartu Profil */}
       <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4 flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-purple-500 flex items-center justify-center">
           <User size={32} className="text-zinc-500" />
@@ -175,6 +175,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Music Player */}
       <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
         <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Music size={16} className="text-purple-400"/> Music Player</h3>
         <div className="flex gap-2 mb-3">
@@ -187,6 +188,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Quick Action & Game */}
       <div className="grid grid-cols-2 gap-3">
         <button onClick={() => setActiveTab("tools")} className="bg-[#1e182b] border border-purple-900/50 rounded-xl p-3 flex flex-col items-start gap-1">
           <Gamepad2 size={20} className="text-purple-400 mb-1" /><span className="text-sm font-bold text-white">Main Game</span><span className="text-[10px] text-zinc-400">Buka menu game</span>
@@ -196,6 +198,7 @@ export default function Home() {
         </button>
       </div>
 
+      {/* Status Story */}
       <div>
         <h3 className="text-xs font-bold text-zinc-400 mb-2">STATUS ONLINE</h3>
         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -205,6 +208,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Global Chat */}
       <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
         <div className="flex justify-between items-center mb-3"><h3 className="text-white font-bold text-sm">Global Chat</h3></div>
         <div className="bg-[#0f0a15] border border-[#2a2136] rounded-xl p-3 h-16 overflow-hidden mb-3"><p className="text-xs text-zinc-300">{globalMsgs.length > 0 ? (<><span className="text-purple-400 font-bold">{globalMsgs[globalMsgs.length - 1].from}:</span> {globalMsgs[globalMsgs.length - 1].msg}</>) : ("Belum ada pesan...")}</p></div>
