@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import { Chessboard } from "react-chessboard";
+import { Chess } from "chess.js";
 import { 
   Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
   MessageSquare, Bell, Plus, Heart, Calendar, Wrench, 
@@ -49,6 +51,59 @@ export default function Home() {
   // Music State
   const [musicQuery, setMusicQuery] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // --- LOGIKA CATUR (AI MINIMAX) ---
+  const [chessGame, setChessGame] = useState(new Chess());
+  
+  function makeAiMove() {
+    const game = new Chess(chessGame.fen());
+    const possibleMoves = game.moves();
+    if (game.isGameOver() || possibleMoves.length === 0) return;
+    
+    let bestMove = null;
+    let bestValue = -9999;
+    
+    for (let i = 0; i < possibleMoves.length; i++) {
+      game.move(possibleMoves[i]);
+      let boardValue = -evaluateBoard(game.board());
+      if (boardValue > bestValue) {
+        bestValue = boardValue;
+        bestMove = possibleMoves[i];
+      }
+      game.undo();
+    }
+    
+    if (bestMove) {
+      game.move(bestMove);
+      setChessGame(new Chess(game.fen()));
+    }
+  }
+
+  const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+  function evaluateBoard(board) {
+    let totalEvaluation = 0;
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        totalEvaluation = totalEvaluation + getPieceValue(board[i][j]);
+      }
+    }
+    return totalEvaluation;
+  }
+  function getPieceValue(piece) {
+    if (piece === null) return 0;
+    const absoluteValue = pieceValues[piece.type] || 0;
+    return piece.color === 'w' ? absoluteValue : -absoluteValue;
+  }
+
+  function onDrop(sourceSquare, targetSquare) {
+    try {
+      const move = chessGame.move({ from: sourceSquare, to: targetSquare, promotion: "q" });
+      if (move === null) return false;
+      setChessGame(new Chess(chessGame.fen()));
+      setTimeout(() => makeAiMove(), 500);
+      return true;
+    } catch (error) { return false; }
+  }
 
   // --- LOGIKA TICTACTOE ---
   const [tttBoard, setTttBoard] = useState(Array(9).fill(null));
@@ -157,6 +212,55 @@ export default function Home() {
     }
   };
 
+  // --- LOGIKA SOS (5x5) ---
+  const [sosBoard, setSosBoard] = useState(Array(25).fill(null));
+  const [sosTurn, setSosTurn] = useState("S");
+  const [sosMsg, setSosMsg] = useState("Kamu main 'S', NPC main 'O'. Bikin pola SOS!");
+
+  const handleSosClick = (idx) => {
+    if (sosBoard[idx] || sosTurn !== "S") return;
+    const newBoard = [...sosBoard];
+    newBoard[idx] = "S";
+    setSosBoard(newBoard);
+    setSosTurn("O");
+    
+    setTimeout(() => {
+      const emptySpots = newBoard.map((val, i) => val === null ? i : null).filter(val => val !== null);
+      if (emptySpots.length > 0) {
+        const randomSpot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+        newBoard[randomSpot] = "O";
+        setSosBoard([...newBoard]);
+        setSosTurn("S");
+      }
+    }, 800);
+  };
+
+  // --- LOGIKA ULAR TANGGA (5x5) ---
+  const [ularPos, setUlarPos] = useState(0);
+  const [ularNpcPos, setUlarNpcPos] = useState(0);
+  const [ularMsg, setUlarMsg] = useState("Lempar dadu buat mulai!");
+  const [ularDice, setUlarDice] = useState(1);
+
+  const rollDice = () => {
+    if (ularPos >= 25 || ularNpcPos >= 25) return;
+    const dice = Math.floor(Math.random() * 6) + 1;
+    setUlarDice(dice);
+    let newPos = ularPos + dice;
+    if (newPos > 25) newPos = 25;
+    setUlarPos(newPos);
+    setUlarMsg(`Kamu dapet ${dice}, maju ke kotak ${newPos}`);
+
+    setTimeout(() => {
+      const npcDice = Math.floor(Math.random() * 6) + 1;
+      let newNpcPos = ularNpcPos + npcDice;
+      if (newNpcPos > 25) newNpcPos = 25;
+      setUlarNpcPos(newNpcPos);
+      setUlarMsg(`Kamu kotak ${newPos}, NPC dapet ${npcDice} maju ke kotak ${newNpcPos}`);
+      if (newPos === 25) setUlarMsg("KAMU MENANG!");
+      else if (newNpcPos === 25) setUlarMsg("NPC MENANG!");
+    }, 1000);
+  };
+
   // --- LOGIN & SOCKET ---
   const handleLogin = async (e) => {
     e.preventDefault(); setLoginError("");
@@ -235,15 +339,23 @@ export default function Home() {
   }
 
   const gamesList = [
+    { id: "catur", title: "Catur", icon: <Crown size={24} className="text-yellow-400" /> },
     { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" /> },
     { id: "uno", title: "Uno Card", icon: <CircleDollarSign size={24} className="text-red-400" /> },
     { id: "domino", title: "Domino", icon: <Grid3X3 size={24} className="text-blue-400" /> },
-    { id: "catur", title: "Catur (Soon)", icon: <Crown size={24} className="text-yellow-400" /> },
     { id: "sos", title: "SOS", icon: <Puzzle size={24} className="text-pink-400" /> },
     { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" /> },
   ];
 
   const renderGameMenu = () => {
+    if (activeGame === "catur") {
+      return (
+        <div className="bg-[#16111e] p-4 rounded-2xl">
+           <button onClick={() => setActiveGame(null)} className="text-red-400 text-xs font-bold mb-4">← Keluar</button>
+           <Chessboard position={chessGame.fen()} onPieceDrop={onDrop} boardWidth={320} />
+        </div>
+      );
+    }
     if (activeGame === "tictactoe") {
       return (
         <div className="bg-[#16111e] p-4 rounded-2xl flex flex-col items-center">
@@ -309,31 +421,43 @@ export default function Home() {
         </div>
       );
     }
-    if (activeGame === "sos" || activeGame === "ular" || activeGame === "catur") {
+    if (activeGame === "sos") {
       return (
-        <div className="bg-[#16111e] p-6 rounded-2xl flex flex-col items-center text-center">
+        <div className="bg-[#16111e] p-4 rounded-2xl flex flex-col items-center">
            <button onClick={() => setActiveGame(null)} className="text-red-400 text-xs font-bold mb-4 self-start">← Keluar</button>
-           <Gamepad2 size={48} className="text-purple-500 mb-4"/>
-           <h2 className="text-white font-bold text-lg">Papan {activeGame.toUpperCase()}</h2>
-           <p className="text-zinc-500 text-sm mt-2">Papan {activeGame} akan diupdate minggu depan!</p>
+           <p className="text-center text-xs text-yellow-400 mb-4">{sosMsg}</p>
+           <div className="grid grid-cols-5 gap-2 w-full max-w-[300px]">
+             {sosBoard.map((cell, idx) => (
+               <div key={idx} onClick={() => handleSosClick(idx)} className="w-full aspect-square bg-[#0f0a15] border border-zinc-700 flex items-center justify-center text-xl font-bold text-white cursor-pointer hover:bg-zinc-800">
+                 {cell}
+               </div>
+             ))}
+           </div>
         </div>
       );
     }
-
-    return (
-      <div className="grid grid-cols-2 gap-3">
-        {gamesList.map((game) => (
-          <div key={game.id} className="bg-[#16111e] border border-[#2a2136] rounded-xl p-4 flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-[#0f0a15] rounded-full flex items-center justify-center mb-2">{game.icon}</div>
-            <h3 className="text-white font-bold text-sm mb-3">{game.title}</h3>
-            <button onClick={() => setActiveGame(game.id)} className="bg-zinc-800 text-white text-[10px] font-bold py-1.5 rounded w-full border border-zinc-700 hover:bg-zinc-700">Buka Game</button>
-          </div>
-        ))}
-      </div>
-    );
+    if (activeGame === "ular") {
+      return (
+        <div className="bg-[#16111e] p-4 rounded-2xl flex flex-col items-center">
+           <button onClick={() => setActiveGame(null)} className="text-red-400 text-xs font-bold mb-4 self-start">← Keluar</button>
+           <p className="text-center text-xs text-yellow-400 mb-4">{ularMsg}</p>
+           <div className="flex gap-4 mb-4 text-white font-bold">
+             <div className="bg-blue-600 p-2 rounded">Kamu: Kotak {ularPos}</div>
+             <div className="bg-red-600 p-2 rounded">NPC: Kotak {ularNpcPos}</div>
+           </div>
+           <div className="grid grid-cols-5 gap-1 w-full max-w-[300px] mb-6">
+             {[...Array(25)].map((_, i) => (
+               <div key={i} className={`aspect-square flex items-center justify-center text-xs font-bold ${i+1 === ularPos ? 'bg-blue-500 text-white' : i+1 === ularNpcPos ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                 {i+1}
+               </div>
+             ))}
+           </div>
+           <button onClick={rollDice} className="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold">Lempar Dadu ({ularDice})</button>
+        </div>
+      );
+    }
   };
 
-  // DATA FITUR LENGKAP
   const menuData = {
     tools: [
       { title: "Cek NPSN", desc: "Cari data sekolah", icon: <FileText size={24} className="text-blue-400"/>, endpoint: "/api/ceknpsn", payload: { npsn: target } },
@@ -385,19 +509,58 @@ export default function Home() {
 
   const renderHome = () => (
     <main className="px-4 max-w-md mx-auto space-y-5">
-      <div className="w-full h-44 bg-black rounded-2xl overflow-hidden relative">
-        <video src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => setVideoIndex(1)} loop={videoIndex === 1} />
+      <div className="w-full h-44 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
+        <video key={videoIndex} src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => videoIndex === 0 && setVideoIndex(1)} loop={videoIndex === 1} />
+        <div className="absolute bottom-4 left-4 z-10"><h2 className="text-white font-bold text-lg">Mikasa Project</h2></div>
       </div>
-      <div className="bg-[#16111e] p-4 rounded-2xl flex items-center gap-3">
-        <User size={32} className="text-zinc-500" />
-        <h3 className="text-white font-bold">{username} <span className="text-[10px] bg-purple-600 px-2 py-0.5 rounded text-white ml-2">{userRole}</span></h3>
+      
+      <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4 flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-purple-500 flex items-center justify-center"><User size={32} className="text-zinc-500" /></div>
+        <div className="flex-1"><div className="flex items-center gap-2"><h3 className="text-white font-bold text-lg">{username}</h3><span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${userRole === 'ADMIN' ? 'bg-red-600' : 'bg-purple-600'} text-white`}>{userRole}</span></div></div>
       </div>
+
+      <div>
+        <div className="flex justify-between items-center mb-3"><h3 className="text-xs font-bold text-zinc-400 tracking-wider">STATUS</h3><span className="text-xs text-purple-500 font-semibold cursor-pointer">Lihat semua</span></div>
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer"><div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-600 flex items-center justify-center bg-[#16111e] relative"><Plus size={20} className="text-zinc-400" /><div className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-0.5 border-2 border-[#0f0a15]"><Plus size={10} className="text-white"/></div></div><span className="text-[10px] text-zinc-400">Tambah</span></div>
+          {onlineUsers.map((name, i) => (
+            <div key={i} className="flex flex-col items-center gap-1 min-w-[60px]"><div className="w-14 h-14 rounded-full border-2 border-purple-600 p-0.5"><div className="w-full h-full rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center"><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}&backgroundColor=1a1a24`} alt={name} className="w-full h-full object-cover" /></div></div><span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span></div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
+        <div className="bg-[#16111e] border border-[#2a2136] rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isPlaying ? 'bg-green-900/50' : 'bg-zinc-800'}`}><Music size={20} className={isPlaying ? 'text-green-500' : 'text-zinc-500'} /></div><div><p className="text-sm text-zinc-300 font-semibold">{musicQuery || "Belum ada lagu"}</p><p className="text-[10px] text-zinc-500">{musicQuery ? "Mikasa Music" : "Buka Music library"}</p></div></div>
+          <ArrowRight size={16} className="text-zinc-500" />
+        </div>
+      </div>
+
+      <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
+        <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Music size={16} className="text-purple-400"/> Music Library</h3>
+        <div className="flex gap-2 mb-3">
+          <input type="text" placeholder="Cari lagu..." value={musicQuery} onChange={(e) => setMusicQuery(e.target.value)} className="flex-1 bg-[#0f0a15] border border-[#2a2136] rounded-lg p-2 text-sm text-white" />
+          <button className="bg-purple-600 p-2 rounded-lg text-white"><Search size={18}/></button>
+        </div>
+        <button onClick={() => setIsPlaying(!isPlaying)} className="w-full bg-[#1c1526] border border-[#2a2136] py-2 rounded-lg text-white font-semibold flex justify-center items-center gap-2">
+           {isPlaying ? <><Pause size={16}/> Pause Lagu</> : <><Play size={16}/> Putar Lagu</>}
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => setActiveTab("games")} className="bg-[#1e182b] p-3 rounded-xl flex flex-col items-start border border-purple-900"><Gamepad2 size={20} className="text-purple-400 mb-1"/><span className="text-white font-bold text-sm">Main Game</span></button>
+        <button onClick={() => setActiveTab("games")} className="bg-[#1e182b] border border-purple-900/50 rounded-xl p-3 flex flex-col items-start gap-1 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+          <Gamepad2 size={20} className="text-purple-400 mb-1" /><span className="text-sm font-bold text-white">Main Game</span><span className="text-[10px] text-zinc-400">Buka menu game</span>
+        </button>
+        <button className="bg-[#2a1620] border border-red-900/50 rounded-xl p-3 flex flex-col items-start gap-1">
+          <Heart size={20} className="text-red-400 mb-1" /><span className="text-sm font-bold text-white">Donasi</span><span className="text-[10px] text-zinc-400">Dukung Mikasa</span>
+        </button>
       </div>
-      <div className="bg-[#16111e] p-4 rounded-2xl">
-        <h3 className="text-white font-bold mb-3">Global Chat</h3>
-        <button onClick={() => setActiveTab("chat")} className="w-full bg-[#1c1526] py-2 rounded-xl text-white text-sm">Buka Chat</button>
+
+      <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
+        <div className="flex justify-between items-center mb-3"><h3 className="text-white font-bold text-sm">Global Chat</h3></div>
+        <div className="bg-[#0f0a15] border border-[#2a2136] rounded-xl p-3 h-16 overflow-hidden mb-3"><p className="text-xs text-zinc-300">{globalMsgs.length > 0 ? (<><span className="text-purple-400 font-bold">{globalMsgs[globalMsgs.length - 1].from}:</span> {globalMsgs[globalMsgs.length - 1].msg}</>) : ("Belum ada pesan...")}</p></div>
+        <button onClick={() => setActiveTab("chat")} className="w-full bg-[#1c1526] border border-[#2a2136] text-white text-sm font-semibold py-2.5 rounded-xl">Buka</button>
       </div>
     </main>
   );
