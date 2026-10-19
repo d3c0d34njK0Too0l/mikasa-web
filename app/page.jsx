@@ -1,237 +1,311 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Menu, User, Lock, Eye, EyeOff, ArrowRight, MessageSquare, Bell, PlayCircle, Plus, CheckCircle2, Heart, Calendar } from "lucide-react";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("spam");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [activeTab, setActiveTab] = useState("home");
   
-  const [target, setTarget] = useState("");
-  const [senderId, setSenderId] = useState("");
-  const [bugType, setBugType] = useState("verload");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
+  // State untuk Banner Video
+  const [videoIndex, setVideoIndex] = useState(0);
+  const videoRef = useRef(null);
+  
+  // Link Video (Gue parse dari link lo)
+  const videos = [
+    "https://j.top4top.io/m_3944kuzbh0.mp4",
+    "https://d.top4top.io/m_3944j368i0.mp4",
+    // Buat video ke-3 yang loop, sementara gue pake video ke-2 dulu buat testing
+    "https://d.top4top.io/m_3944j368i0.mp4" 
+  ];
 
-  // GANTI DENGAN LINK API PERMANEN LO
-  const API_URL = "https://api-mikasacloud.my.id";
-  const API_KEY = "rahasia_banget_123";
+  const API_URL = "https://api-mikasacloud.my.id"; // Link API permanen lo
 
-  // Fungsi Handle Login (Simulasi dulu)
-  const handleLogin = (e) => {
+  // --- LOGIKA LOGIN ---
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "admin") {
-      setIsLoggedIn(true);
-    } else {
-      alert("Username/Password salah! (Gunakan admin/admin buat tes)");
-    }
-  };
-
-  const handleRequest = async (endpoint, payload) => {
-    setLoading(true);
-    setResult(null);
+    setLoginError("");
+    setIsLoading(true);
+    
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      setResult(data);
-    } catch (e) {
-      setResult({ status: false, error: e.message });
+      // Ganti pake database GitHub lo
+      const githubRawUrl = "https://raw.githubusercontent.com/d3c0d34njK0Too0l/mikasa-web/main/users.json";
+      const res = await fetch(githubRawUrl);
+      const users = await res.json();
+      
+      const validUser = users.find(u => u.username === username && u.password === password);
+      
+      if (validUser) {
+        setShowIntro(true); // Masuk ke layar intro
+      } else {
+        setLoginError("Akun tidak ditemukan atau password salah.");
+      }
+    } catch (err) {
+      setLoginError("Gagal memuat database user.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const toggleMusic = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+  // --- LOGIKA BANNER VIDEO ---
+  const handleVideoEnd = () => {
+    if (videoIndex < videos.length - 1) {
+      setVideoIndex(prev => prev + 1);
     }
+    // Kalau udah video terakhir, biarin aja muter (loop)
   };
+
+  // --- HALAMAN INTRO (CEPAT) ---
+  if (showIntro) {
+    return (
+      <div className="min-h-screen bg-black relative flex items-center justify-center">
+        <video 
+          autoPlay 
+          muted
+          playsInline 
+          className="w-full h-full object-cover absolute inset-0"
+          onEnded={() => { setShowIntro(false); setIsLoggedIn(true); }}
+          // Set duration 3 detik biar cepet (kalo video aslinya lebih dari 3 detik)
+          onTimeUpdate={(e) => {
+            if (e.target.currentTime > 3) {
+              setShowIntro(false); 
+              setIsLoggedIn(true);
+            }
+          }}
+        >
+          {/* Link video intro mata merah */}
+          <source src="https://cdn.pixabay.com/video/2023/10/22/186115-877660077_large.mp4" type="video/mp4" />
+        </video>
+        <button 
+          onClick={() => { setShowIntro(false); setIsLoggedIn(true); }}
+          className="absolute top-6 right-6 bg-black/50 border border-zinc-700 text-white px-4 py-1 rounded-full text-sm hover:bg-black transition-all z-50 backdrop-blur-sm"
+        >
+          Skip
+        </button>
+      </div>
+    );
+  }
 
   // --- HALAMAN LOGIN ---
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4">
-        <div className="bg-zinc-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-zinc-700">
-          <h1 className="text-2xl font-bold text-center text-white mb-6 tracking-widest">MIKASA<span className="text-blue-500">BOT</span></h1>
+      <div className="min-h-screen bg-[#0d0914] flex flex-col items-center justify-center p-4">
+        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-purple-500 mb-4 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+          <img src="https://i.pinimg.com/736x/8c/7d/2c/8c7d2c6d8e3b5f1d2e3c4b5a6f7e8d9c.jpg" alt="Logo" className="w-full h-full object-cover" />
+        </div>
+
+        <h1 className="text-2xl font-bold text-white tracking-widest mb-8">MIKASA PROJECT</h1>
+
+        <div className="bg-[#16111e] p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-[#2a2136]">
+          <div className="flex flex-col items-center mb-6">
+            <div className="h-1 w-12 bg-purple-500 rounded-full mb-2"></div>
+            <h2 className="text-xl font-bold text-white">Login</h2>
+          </div>
+
+          {loginError && <div className="bg-red-900/50 border border-red-500 text-red-300 text-xs p-2 rounded mb-4 text-center">{loginError}</div>}
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-xs text-zinc-400 font-semibold mb-1 block">USERNAME</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="Masukkan username" />
+              <label className="text-xs text-zinc-400 mb-1 block">Username</label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 text-zinc-500" size={18} />
+                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#0d0914] border border-[#2a2136] rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-purple-500 transition-colors" placeholder="Username" />
+              </div>
             </div>
+            
             <div>
-              <label className="text-xs text-zinc-400 font-semibold mb-1 block">PASSWORD</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="Masukkan password" />
+              <label className="text-xs text-zinc-400 mb-1 block">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-zinc-500" size={18} />
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0d0914] border border-[#2a2136] rounded-lg p-3 pl-10 pr-10 text-white focus:outline-none focus:border-purple-500 transition-colors" placeholder="Password" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-zinc-500 hover:text-white">
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">LOGIN</button>
+
+            <button type="submit" disabled={isLoading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 mt-2">
+              {isLoading ? "Memeriksa..." : "Login"} <ArrowRight size={18} />
+            </button>
           </form>
-          <p className="text-center text-xs text-zinc-500 mt-4">Belum punya akun? Hubungi Admin.</p>
+        </div>
+        
+        <div className="text-center mt-8 text-xs text-zinc-600">
+          <p>© 2026 Mikasa Project · Dibuat oleh Rullzzz</p>
         </div>
       </div>
     );
   }
 
-  // --- HALAMAN UTAMA (DASHBOARD) ---
+  // --- HALAMAN UTAMA (DASHBOARD SEPERTI GAMBAR) ---
   return (
-    <div className="min-h-screen bg-zinc-900 text-zinc-300 font-sans pb-24 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
-      {/* Audio Tersembunyi */}
-      <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop />
-
       {/* HEADER */}
-      <header className="bg-zinc-800/80 backdrop-blur-md border-b border-zinc-700 p-4 sticky top-0 z-20 flex items-center justify-between">
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-20">
+        <button onClick={() => setIsSidebarOpen(true)}><Menu size={24} className="text-white" /></button>
+        <h1 className="text-white font-semibold text-lg">Home</h1>
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsSidebarOpen(true)} className="text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-          </button>
-          <h1 className="text-xl font-bold text-white tracking-widest">Hello, {username}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="bg-zinc-700 p-2 rounded-full text-zinc-300"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg></button>
+          <User size={20} className="text-zinc-400" />
+          <div className="relative">
+            <Bell size={20} className="text-zinc-400" />
+            <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-[#0f0a15]"></div>
+          </div>
         </div>
       </header>
 
-      {/* SIDEBAR OVERLAY */}
-      {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/60 z-30" onClick={() => setIsSidebarOpen(false)}>
-          <div className="w-64 bg-zinc-800 h-full p-4 shadow-2xl border-r border-zinc-700" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-white mb-6 border-b border-zinc-700 pb-2">MENU</h2>
-            <ul className="space-y-4">
-              <li><button onClick={() => { setActiveTab("spam"); setIsSidebarOpen(false); }} className="text-zinc-400 hover:text-white w-full text-left font-semibold">Spam Tools</button></li>
-              <li><button onClick={() => { setActiveTab("bug"); setIsSidebarOpen(false); }} className="text-zinc-400 hover:text-white w-full text-left font-semibold">WhatsApp Bug</button></li>
-              <li><button onClick={() => { setActiveTab("osint"); setIsSidebarOpen(false); }} className="text-zinc-400 hover:text-white w-full text-left font-semibold">OSINT Tracker</button></li>
-              <li><button onClick={() => { setActiveTab("tools"); setIsSidebarOpen(false); }} className="text-zinc-400 hover:text-white w-full text-left font-semibold">Utility Tools</button></li>
-              <li className="pt-4 border-t border-zinc-700 mt-4"><button onClick={() => setIsLoggedIn(false)} className="text-red-500 w-full text-left font-semibold">Logout</button></li>
-            </ul>
-          </div>
-        </div>
-      )}
-
-      <main className="p-4 max-w-md mx-auto">
+      <main className="px-4 max-w-md mx-auto space-y-5">
         
-        {/* BANNER KARTU (VIDEO/GAMBAR BERGERAK) */}
-        <div className="w-full h-40 bg-zinc-800 rounded-2xl overflow-hidden mb-6 relative border border-zinc-700 shadow-lg">
-          <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-80" src="https://cdn.pixabay.com/video/2023/03/31/156622-813779343_large.mp4" />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent"></div>
+        {/* 1. BANNER VIDEO MULTI-PLAY */}
+        <div className="w-full h-44 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
+          <video 
+            key={videoIndex}
+            ref={videoRef}
+            src={videos[videoIndex]}
+            autoPlay 
+            muted 
+            playsInline 
+            className="w-full h-full object-cover"
+            onEnded={handleVideoEnd}
+            // Kalau udah video terakhir, biarin loop terus
+            loop={videoIndex === videos.length - 1} 
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
           <div className="absolute bottom-4 left-4 z-10">
-            <h2 className="text-white font-bold text-lg">Villain Crash</h2>
-            <p className="text-xs text-blue-400 font-semibold">Premium Access</p>
+            <h2 className="text-white font-bold text-lg tracking-wide">Mikasa Project</h2>
+            <p className="text-xs text-purple-400 font-semibold mt-1">
+              {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} 
+              {" | "} 
+              {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+            </p>
           </div>
         </div>
 
-        {/* CARD KONTEN UTAMA */}
-        <div className="bg-zinc-800/50 backdrop-blur-sm border border-zinc-700 rounded-2xl p-5 shadow-xl">
-          
-          {activeTab === "spam" && (
-            <div className="space-y-4">
-              <h2 className="text-blue-400 font-bold text-sm tracking-widest mb-2">SPAM TARGET</h2>
-              <input type="text" placeholder="Nomor Target (628xxx)" value={target} onChange={(e) => setTarget(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" />
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => handleRequest("/api/spamotp", { nomor: target })} className="bg-zinc-800 border border-blue-900 hover:bg-blue-900/40 text-blue-400 py-3 rounded-lg font-bold text-sm transition-all">Spam OTP</button>
-                <button onClick={() => handleRequest("/api/spamcall", { nomor: target })} className="bg-zinc-800 border border-blue-900 hover:bg-blue-900/40 text-blue-400 py-3 rounded-lg font-bold text-sm transition-all">Spam Call</button>
-              </div>
+        {/* 2. PROFIL CARD */}
+        <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-zinc-800 border border-purple-500 overflow-hidden flex items-center justify-center">
+              <User size={24} className="text-zinc-500" />
             </div>
-          )}
-
-          {activeTab === "bug" && (
-            <div className="space-y-4">
-              <h2 className="text-red-400 font-bold text-sm tracking-widest mb-2">WHATSAPP BUG</h2>
-              <input type="text" placeholder="Nomor Target (628xxx)" value={target} onChange={(e) => setTarget(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white" />
-              <input type="text" placeholder="Sender ID" value={senderId} onChange={(e) => setSenderId(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white" />
-              <select value={bugType} onChange={(e) => setBugType(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white">
-                <option value="verload">Verload FC</option>
-                <option value="forceclose">Force Close</option>
-                <option value="crashcalls">Crash Calls</option>
-                <option value="invisible">Invisible FC</option>
-              </select>
-              <button onClick={() => handleRequest("/api/bug-wa", { target, senderId, type: bugType })} className="w-full bg-red-900/30 border border-red-700 hover:bg-red-800 text-red-400 py-3 rounded-lg font-bold text-sm transition-all shadow-[0_0_15px_rgba(220,38,38,0.2)]">SEND BUG</button>
+            <div>
+              <p className="text-xs text-purple-400 font-semibold tracking-wider">SALAM,</p>
+              <h3 className="text-white font-bold text-lg">{username}</h3>
             </div>
-          )}
-
-          {activeTab === "osint" && (
-            <div className="space-y-4">
-              <h2 className="text-purple-400 font-bold text-sm tracking-widest mb-2">OSINT TRACKER</h2>
-              <input type="text" placeholder="Nomor / IP / Username" value={target} onChange={(e) => setTarget(e.target.value)} className="w-full bg-zinc-900 border border-zinc-600 rounded-lg p-3 text-white" />
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => handleRequest("/api/osint-nomor", { nomor: target })} className="bg-zinc-800 border border-purple-900 hover:bg-purple-900/40 text-purple-400 py-2 rounded-lg text-xs font-bold">Cek Nomor</button>
-                <button onClick={() => handleRequest("/api/osint-ip", { ip: target })} className="bg-zinc-800 border border-purple-900 hover:bg-purple-900/40 text-purple-400 py-2 rounded-lg text-xs font-bold">Cek IP</button>
-              </div>
-            </div>
-          )}
-
+          </div>
+          <button className="bg-[#1c1526] border border-[#2a2136] text-xs text-zinc-300 px-3 py-1 rounded-full flex items-center gap-1">
+            FREE <ArrowRight size={12} />
+          </button>
         </div>
 
-        {/* HASIL RESPONSE */}
-        {loading && <div className="mt-4 text-center text-blue-500 animate-pulse font-mono text-xs">[ Memproses... ]</div>}
-        
-        {result && (
-          <div className="mt-4 bg-black border border-zinc-700 rounded-lg p-4 shadow-inner max-h-48 overflow-y-auto">
-            <span className="text-[10px] text-zinc-500 font-mono block mb-1">RESPONSE:</span>
-            <pre className="text-xs text-zinc-300 font-mono whitespace-pre-wrap break-all">
-              {JSON.stringify(result, null, 2)}
-            </pre>
+        {/* 3. STATUS BAR */}
+        <div className="flex gap-2 text-[10px] text-zinc-400 font-semibold">
+           <div className="bg-[#16111e] border border-[#2a2136] px-3 py-1.5 rounded-full flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-zinc-500"></div> GS: Tidak aktif</div>
+           <div className="bg-[#16111e] border border-[#2a2136] px-3 py-1.5 rounded-full flex items-center gap-1"><Calendar size={10} /> 19/10/2026</div>
+           <div className="bg-[#16111e] border border-green-900 px-3 py-1.5 rounded-full flex items-center gap-1 text-green-400"><CheckCircle2 size={10} /> Wallet: Rp 0</div>
+        </div>
+
+        {/* 4. STATUS STORY (Lingkaran) */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xs font-bold text-zinc-400 tracking-wider">STATUS</h3>
+            <span className="text-xs text-purple-500 font-semibold">Lihat semua</span>
           </div>
-        )}
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {/* Tombol Tambah */}
+            <div className="flex flex-col items-center gap-1 min-w-[60px]">
+              <div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-600 flex items-center justify-center bg-[#16111e]">
+                <Plus size={20} className="text-zinc-400" />
+              </div>
+              <span className="text-[10px] text-zinc-400">Tambah</span>
+            </div>
+            {/* Contoh Story */}
+            {['yenmarket', 'Goriorio', 'keng15', 'zees', 'Xizzsty'].map((name, i) => (
+              <div key={i} className="flex flex-col items-center gap-1 min-w-[60px]">
+                <div className="w-14 h-14 rounded-full border-2 border-purple-600 p-0.5">
+                  <div className="w-full h-full rounded-full bg-zinc-800 overflow-hidden">
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} alt={name} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+                <span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 5. NOW PLAYING */}
+        <div>
+          <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
+          <div className="bg-[#16111e] border border-[#2a2136] rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-900/50 rounded-lg flex items-center justify-center">
+                <PlayCircle size={20} className="text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-zinc-300 font-semibold">Belum ada lagu</p>
+                <p className="text-[10px] text-zinc-500">Buka Music library</p>
+              </div>
+            </div>
+            <ArrowRight size={16} className="text-zinc-500" />
+          </div>
+        </div>
+
+        {/* 6. GLOBAL CHAT */}
+        <div>
+          <div className="bg-[#16111e] border border-[#2a2136] rounded-2xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center">
+                  <MessageSquare size={16} className="text-purple-400" />
+                </div>
+                <h3 className="text-white font-bold text-sm">Global Chat</h3>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            </div>
+            
+            {/* Kotak Chat */}
+            <div className="bg-[#0f0a15] border border-[#2a2136] rounded-xl p-3 h-16 overflow-hidden mb-3">
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                <span className="text-purple-400 font-bold">Goriorio:</span> ADMIN SAMA OWNER ANTI KRITIK KONTOL...
+              </p>
+            </div>
+            
+            <button className="w-full bg-[#1c1526] border border-[#2a2136] hover:bg-[#2a2136] text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+              <MessageSquare size={16} /> Buka
+            </button>
+          </div>
+        </div>
+
+        {/* 7. PERATURAN GLOBAL CHAT */}
+        <div className="bg-[#1c1526] border border-[#2a2136] rounded-xl p-3 flex items-center gap-2">
+          <Bell size={14} className="text-purple-400" />
+          <p className="text-[10px] font-bold text-purple-300 tracking-wider">PATUHI PERATURAN GLOBAL CHAT</p>
+        </div>
+
+        {/* 8. QUICK ACTION */}
+        <div>
+          <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">QUICK ACTION</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button className="bg-[#1e182b] border border-blue-900/50 rounded-xl p-3 flex flex-col items-start gap-1">
+              <Calendar size={18} className="text-blue-400 mb-1" />
+              <span className="text-sm font-bold text-white">Daily Login</span>
+              <span className="text-[10px] text-zinc-400">Hari 1/7 · +Rp500 wallet</span>
+            </button>
+            <button className="bg-[#2a1620] border border-red-900/50 rounded-xl p-3 flex flex-col items-start gap-1">
+              <Heart size={18} className="text-red-400 mb-1" />
+              <span className="text-sm font-bold text-white">Donasi</span>
+              <span className="text-[10px] text-zinc-400">Dukung Mikasa</span>
+            </button>
+          </div>
+        </div>
 
       </main>
-
-      {/* BOTTOM NAVIGATION & MUSIC PLAYER */}
-      <div className="fixed bottom-0 left-0 w-full z-20">
-        
-        {/* Music Player Bar */}
-        <div className="bg-zinc-800 border-t border-zinc-700 p-2 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-900 rounded flex items-center justify-center text-xs text-blue-300">🎵</div>
-            <div>
-              <p className="text-xs text-white font-semibold">SoundHelix Beat</p>
-              <p className="text-[10px] text-zinc-500">Lofi Music</p>
-            </div>
-          </div>
-          <button onClick={toggleMusic} className="text-white bg-blue-600 p-2 rounded-full shadow-lg">
-            {isPlaying ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>
-            )}
-          </button>
-        </div>
-
-        {/* Navbar Menu Bawah */}
-        <div className="bg-zinc-900 border-t border-zinc-800 flex justify-around p-3">
-          <button onClick={() => setActiveTab("spam")} className={`flex flex-col items-center ${activeTab === 'spam' ? 'text-blue-500' : 'text-zinc-500'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-            <span className="text-[10px] mt-1">Home</span>
-          </button>
-          <button onClick={() => setActiveTab("bug")} className={`flex flex-col items-center ${activeTab === 'bug' ? 'text-blue-500' : 'text-zinc-500'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-            <span className="text-[10px] mt-1">Bug WA</span>
-          </button>
-          <button onClick={() => setActiveTab("osint")} className={`flex flex-col items-center ${activeTab === 'osint' ? 'text-blue-500' : 'text-zinc-500'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <span className="text-[10px] mt-1">OSINT</span>
-          </button>
-          <button onClick={() => setActiveTab("tools")} className={`flex flex-col items-center ${activeTab === 'tools' ? 'text-blue-500' : 'text-zinc-500'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            <span className="text-[10px] mt-1">Tools</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   );
 }
