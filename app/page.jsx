@@ -7,11 +7,12 @@ import {
   Search, Bug, Send, X, ChevronLeft, ShieldAlert, Globe, 
   FileText, Play, Pause, Gamepad2, Music, CheckCircle2, 
   Dices, Bot, Grid3X3, Crown, CircleDollarSign, Users, 
-  Puzzle, Globe2, Loader2, LogOut, Settings, Edit3, Camera,
-  Clock, Shield, BookOpen, Phone, Terminal, Code2
+  Puzzle, Globe2, Loader2, LogOut, Settings, Camera,
+  Clock, Shield, Phone, Terminal
 } from "lucide-react";
 
 const API_URL = "https://api-mikasacloud.my.id";
+const API_KEY = "rahasia_banget_123";
 const VIDEO_1 = "https://j.top4top.io/m_3944kuzbh0.mp4";
 const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
 
@@ -40,6 +41,26 @@ export default function Home() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [globalMsgs, setGlobalMsgs] = useState([]);
   const [msgInput, setMsgInput] = useState("");
+  const [chatMode, setChatMode] = useState("global"); // "global" | "private"
+  const [chatTarget, setChatTarget] = useState(null); // User ID untuk DM
+  const [privateMsgs, setPrivateMsgs] = useState([]);
+
+  // Tool State
+  const [activeTool, setActiveTool] = useState(null);
+  const [toolTarget, setToolTarget] = useState("");
+  const [toolResult, setToolResult] = useState(null);
+  const [toolLoading, setToolLoading] = useState(false);
+
+  // Game State
+  const [activeGame, setActiveGame] = useState(null);
+  const [gameLevel, setGameLevel] = useState("easy");
+  // Game Engine States
+  const [board, setBoard] = useState(Array(9).fill(null));
+  const [turn, setTurn] = useState('X');
+  const [unoDeck, setUnoDeck] = useState(["merah 5", "biru 7", "hijau 2", "kuning 9"]);
+  const [unoTarget, setUnoTarget] = useState("merah 3");
+  const [playerPos, setPlayerPos] = useState(1);
+  const [dice, setDice] = useState(1);
 
   // Music State
   const [musicSearch, setMusicSearch] = useState("");
@@ -47,9 +68,6 @@ export default function Home() {
   const [loadingMusic, setLoadingMusic] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  // Game State
-  const [activeGame, setActiveGame] = useState(null);
 
   // --- AUTO LOGIN & CLOCK ---
   useEffect(() => {
@@ -65,8 +83,6 @@ export default function Home() {
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' }));
-      
-      // Hitung runtime dari jam 00:00 atau dari login
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       setRuntime(`${hours}:${minutes}`);
@@ -104,16 +120,29 @@ export default function Home() {
     setUsername("");
     setPassword("");
     setIsSidebarOpen(false);
+    if(socket) socket.close();
   };
 
-  // --- SOCKET CHAT ---
+  // --- SOCKET CHAT (GLOBAL & PRIVATE) ---
   useEffect(() => {
     if (isLoggedIn) {
       const newSocket = io(API_URL);
       setSocket(newSocket);
+      
       newSocket.emit('user_online', username);
-      newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
-      newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
+      
+      newSocket.on('update_online_users', (users) => {
+        setOnlineUsers(users.filter(u => u !== username));
+      });
+
+      newSocket.on('receive_global_msg', (data) => {
+        setGlobalMsgs((prev) => [...prev, data]);
+      });
+
+      newSocket.on('receive_private_msg', (data) => {
+        setPrivateMsgs((prev) => [...prev, data]);
+      });
+      
       return () => newSocket.close();
     }
   }, [isLoggedIn, username]);
@@ -123,6 +152,21 @@ export default function Home() {
     if (!msgInput.trim() || !socket) return;
     socket.emit('send_global_msg', { from: username, msg: msgInput });
     setMsgInput("");
+  };
+
+  const sendPrivateMsg = (e) => {
+    e.preventDefault();
+    if (!msgInput.trim() || !socket || !chatTarget) return;
+    const data = { from: username, to: chatTarget, msg: msgInput };
+    socket.emit('send_private_msg', data);
+    setMsgInput("");
+  };
+
+  const openPrivateChat = (targetUser) => {
+    setChatTarget(targetUser);
+    setChatMode("private");
+    setPrivateMsgs([]); // Clear previous chat
+    setActiveTab("chat");
   };
 
   // --- MUSIC LOGIC ---
@@ -184,8 +228,61 @@ export default function Home() {
     }
   };
 
+  // --- TOOLS REQUEST ---
+  const executeTool = async () => {
+    if (!activeTool || !toolTarget) return;
+    setToolLoading(true);
+    setToolResult(null);
+    try {
+      const res = await fetch(`${API_URL}${activeTool.endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify({ ...activeTool.payload, target: toolTarget })
+      });
+      const data = await res.json();
+      setToolResult(data);
+    } catch (err) {
+      setToolResult({ status: false, error: "Gagal terhubung ke API" });
+    } finally {
+      setToolLoading(false);
+    }
+  };
 
-  // --- LOGIN PAGE ---
+  // --- GAME LOGIC (TicTacToe) ---
+  const checkTicTacToeWin = (b) => {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (let line of lines) {
+      if (b[line[0]] && b[line[0]] === b[line[1]] && b[line[0]] === b[line[2]]) return b[line[0]];
+    }
+    return b.includes(null) ? null : 'Draw';
+  };
+
+  const npcTicTacToeMove = (currentBoard) => {
+    const empty = currentBoard.map((v, i) => v === null ? i : null).filter(v => v !== null);
+    if (!empty.length) return;
+    let move = empty[Math.floor(Math.random() * empty.length)];
+    if (gameLevel === 'hard') {
+      for (let i of empty) {
+        let temp = [...currentBoard]; temp[i] = 'O';
+        if (checkTicTacToeWin(temp) === 'O') { move = i; break; }
+      }
+    }
+    const newBoard = [...currentBoard];
+    newBoard[move] = 'O';
+    setBoard(newBoard);
+    setTurn('X');
+  };
+
+  const handleTicTacToeClick = (i) => {
+    if (board[i] || checkTicTacToeWin(board) || !activeGame) return;
+    const newBoard = [...board];
+    newBoard[i] = 'X';
+    setBoard(newBoard);
+    setTurn('O');
+    setTimeout(() => npcTicTacToeMove(newBoard), 500);
+  };
+
+  // --- RENDERS ---
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#0f0a15] flex flex-col items-center justify-center p-4">
@@ -214,33 +311,6 @@ export default function Home() {
     );
   }
 
-  // --- PROFILE MODAL ---
-  const renderProfileModal = () => (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
-        <button onClick={() => setShowProfileModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
-        <h2 className="text-white font-bold text-lg mb-4">Edit Profil</h2>
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div className="flex flex-col items-center mb-4">
-            <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-500 overflow-hidden relative group cursor-pointer">
-              {userProfile.avatar ? <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-zinc-500 m-auto mt-4" />}
-              <label className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer">
-                <Camera size={24} className="text-white" />
-                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-              </label>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400 block mb-1">Nama Tampilan</label>
-            <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({...userProfile, name: e.target.value})} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" />
-          </div>
-          <button type="submit" className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg">Simpan</button>
-        </form>
-      </div>
-    </div>
-  );
-
-  // --- SIDEBAR MENU ---
   const renderSidebar = () => (
     <>
       <div className={`fixed inset-0 bg-black/60 z-40 transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)} />
@@ -257,152 +327,128 @@ export default function Home() {
     </>
   );
 
-  // --- GAME ENGINE ---
-  const renderGameEngine = () => {
-    if (!activeGame) return null;
-    const { type, mode } = activeGame;
-    const [board, setBoard] = useState(Array(9).fill(null));
-    const [turn, setTurn] = useState('X');
-
-    const handleTicTacToeClick = (i) => {
-      if (board[i] || checkTicTacToeWin(board)) return;
-      const newBoard = [...board];
-      newBoard[i] = turn;
-      setBoard(newBoard);
-      setTurn(turn === 'X' ? 'O' : 'X');
-      if (mode === 'npc' && !checkTicTacToeWin(newBoard)) {
-        setTimeout(() => npcTicTacToeMove(newBoard), 500);
-      }
-    };
-
-    const npcTicTacToeMove = (currentBoard) => {
-      const empty = currentBoard.map((v, i) => v === null ? i : null).filter(v => v !== null);
-      if (!empty.length) return;
-      let move = empty[Math.floor(Math.random() * empty.length)]; 
-      if (activeGame.level === 'hard') {
-        for (let i of empty) {
-          let temp = [...currentBoard]; temp[i] = 'O';
-          if (checkTicTacToeWin(temp) === 'O') { move = i; break; }
-        }
-      }
-      const newBoard = [...currentBoard];
-      newBoard[move] = 'O';
-      setBoard(newBoard);
-      setTurn('X');
-    };
-
-    const checkTicTacToeWin = (b) => {
-      const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-      for (let line of lines) {
-        if (b[line[0]] && b[line[0]] === b[line[1]] && b[line[0]] === b[line[2]]) return b[line[0]];
-      }
-      return b.includes(null) ? null : 'Draw';
-    };
-
-    const renderTicTacToe = () => {
-      const winner = checkTicTacToeWin(board);
-      return (
-        <div className="flex flex-col items-center p-6 bg-[#1c1c1e] rounded-2xl border border-zinc-700 w-full max-w-sm">
-          <h3 className="text-white font-bold mb-4">{winner ? (winner === 'Draw' ? 'Seri!' : `Menang: ${winner}`) : `Giliran: ${turn}`}</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {board.map((cell, i) => (
-              <button key={i} onClick={() => handleTicTacToeClick(i)} className="w-20 h-20 bg-[#0f0a15] border border-zinc-700 rounded-xl text-3xl font-bold flex items-center justify-center">
-                <span className={cell === 'X' ? 'text-zinc-400' : 'text-red-500'}>{cell}</span>
-              </button>
-            ))}
+  const renderToolModal = () => {
+    if (!activeTool) return null;
+    return (
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
+          <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
+          <h2 className="text-white font-bold text-lg mb-4">{activeTool.name}</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-zinc-400 block mb-1">Target / Input</label>
+              <input 
+                type="text" 
+                value={toolTarget} 
+                onChange={(e) => setToolTarget(e.target.value)} 
+                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" 
+                placeholder={activeTool.placeholder || "Masukkan target..."} 
+              />
+            </div>
+            <button onClick={executeTool} disabled={toolLoading} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
+              {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
+            </button>
+            {toolResult && (
+              <div className="mt-4 bg-black border border-zinc-700 p-3 rounded-lg max-h-40 overflow-y-auto">
+                <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap">{JSON.stringify(toolResult, null, 2)}</pre>
+              </div>
+            )}
           </div>
-          <button onClick={() => { setBoard(Array(9).fill(null)); setTurn('X'); }} className="mt-6 w-full bg-zinc-600 text-white font-bold py-3 rounded-xl">Reset</button>
-        </div>
-      );
-    };
-
-    const [unoDeck, setUnoDeck] = useState(["merah 5", "biru 7", "hijau 2", "kuning 9"]);
-    const [unoTarget, setUnoTarget] = useState("merah 3");
-    
-    const renderUno = () => (
-      <div className="flex flex-col items-center p-6 bg-[#1c1c1e] rounded-2xl border border-zinc-700 w-full max-w-sm text-center">
-        <h3 className="text-white font-bold mb-4">Uno</h3>
-        <p className="text-sm text-zinc-400 mb-2">Kartu Target:</p>
-        <div className={`w-24 h-32 rounded-xl mb-6 flex items-center justify-center text-white text-2xl font-bold shadow-lg ${unoTarget.includes("merah") ? "bg-red-600" : "bg-blue-600"}`}>
-          {unoTarget}
-        </div>
-        <p className="text-sm text-zinc-400 mb-2">Kartu Kamu:</p>
-        <div className="flex gap-2 mb-6">
-          {unoDeck.map((c, i) => (
-             <div key={i} className={`w-16 h-24 rounded-lg flex items-center justify-center text-white font-bold ${c.includes("merah") ? "bg-red-600" : c.includes("biru") ? "bg-blue-600" : "bg-green-600"}`}>{c}</div>
-          ))}
         </div>
       </div>
     );
+  };
 
-    const [playerPos, setPlayerPos] = useState(1);
-    const [dice, setDice] = useState(1);
-    
-    const rollDice = () => {
-      const d = Math.floor(Math.random() * 6) + 1;
-      setDice(d);
-      let newPos = Math.min(25, playerPos + d);
-      const snakes = { 12: 5, 18: 8, 24: 16 };
-      const ladders = { 3: 10, 7: 15, 14: 21 };
-      if (snakes[newPos]) newPos = snakes[newPos];
-      if (ladders[newPos]) newPos = ladders[newPos];
-      setPlayerPos(newPos);
-      if (newPos === 25) alert("Kamu Menang! 🎉");
-    };
+  const renderGameModal = () => {
+    if (!activeGame) return null;
 
-    const renderUlarTangga = () => {
-      const boardCells = [];
-      for (let i = 25; i >= 1; i--) boardCells.push(i);
+    return (
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
+          <button onClick={() => setActiveGame(null)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
+          <h2 className="text-white font-bold text-lg mb-4 text-center capitalize">{activeGame}</h2>
 
-      return (
-        <div className="flex flex-col items-center p-4 bg-[#1c1c1e] rounded-2xl border border-zinc-700 w-full max-w-sm">
-          <h3 className="text-white font-bold mb-4">Ular Tangga</h3>
-          <div className="grid grid-cols-5 gap-1 mb-6 w-full aspect-square bg-[#0f0a15] p-2 rounded-xl border border-zinc-700">
-            {boardCells.map((num) => (
-              <div key={num} className={`flex items-center justify-center text-xs font-bold text-white rounded ${num === playerPos ? "bg-zinc-600" : "bg-[#2a2a2e]"}`}>
-                {num === playerPos ? "P" : num}
+          {activeGame === 'tictactoe' && (
+             <div className="flex flex-col items-center">
+               <h3 className="text-zinc-300 mb-4">{checkTicTacToeWin(board) ? (checkTicTacToeWin(board) === 'Draw' ? 'Seri!' : `Menang: ${checkTicTacToeWin(board)}`) : `Giliran: ${turn}`}</h3>
+               <div className="grid grid-cols-3 gap-2 mb-6">
+                 {board.map((cell, i) => (
+                   <button key={i} onClick={() => handleTicTacToeClick(i)} className="w-20 h-20 bg-[#0f0a15] border border-zinc-700 rounded-xl text-3xl font-bold flex items-center justify-center">
+                     <span className={cell === 'X' ? 'text-zinc-400' : 'text-red-500'}>{cell}</span>
+                   </button>
+                 ))}
+               </div>
+               <button onClick={() => { setBoard(Array(9).fill(null)); setTurn('X'); }} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-xl">Reset</button>
+             </div>
+          )}
+
+          {activeGame === 'uno' && (
+             <div className="flex flex-col items-center text-center">
+               <p className="text-sm text-zinc-400 mb-2">Kartu Target:</p>
+               <div className={`w-24 h-32 rounded-xl mb-6 flex items-center justify-center text-white text-xl font-bold shadow-lg ${unoTarget.includes("merah") ? "bg-red-600" : "bg-blue-600"}`}>
+                 {unoTarget}
+               </div>
+               <p className="text-sm text-zinc-400 mb-2">Kartu Kamu:</p>
+               <div className="flex gap-2 mb-6">
+                 {unoDeck.map((c, i) => (
+                    <div key={i} className={`w-16 h-24 rounded-lg flex items-center justify-center text-white text-xs font-bold ${c.includes("merah") ? "bg-red-600" : c.includes("biru") ? "bg-blue-600" : "bg-green-600"}`}>{c}</div>
+                 ))}
+               </div>
+             </div>
+          )}
+
+          {activeGame === 'ular' && (
+            <div className="flex flex-col items-center">
+              <div className="grid grid-cols-5 gap-1 mb-6 w-full aspect-square bg-[#0f0a15] p-2 rounded-xl border border-zinc-700">
+                {Array.from({length: 25}, (_, i) => 25 - i).map((num) => (
+                  <div key={num} className={`flex items-center justify-center text-xs font-bold text-white rounded ${num === playerPos ? "bg-zinc-600" : "bg-[#2a2a2e]"}`}>
+                    {num === playerPos ? "P" : num}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="text-4xl">{['⚀','⚁','⚂','⚃','⚄','⚅'][dice-1]}</div>
-            <div className="text-white font-bold">Posisi: {playerPos}</div>
-          </div>
-          <button onClick={rollDice} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-xl mb-2">Lempar Dadu</button>
-        </div>
-      );
-    };
-
-    const renderChess = () => {
-      const pieces = ["♜","♞","♝","♛","♚","♝","♞","♜","♟","♟","♟","♟","♟","♟","♟","♟","","","","","","","","","","","","","","","","","♙","♙","♙","♙","♙","♙","♙","♙","♖","♘","♗","♕","♔","♗","♘","♖"];
-      return (
-        <div className="flex flex-col items-center p-2 bg-[#1c1c1e] rounded-2xl border border-zinc-700 w-full max-w-sm">
-          <h3 className="text-white font-bold mb-2">Catur (NPC Mode)</h3>
-          <div className="grid grid-cols-8 border-2 border-zinc-600 w-full aspect-square mb-4">
-            {pieces.map((p, i) => (
-              <div key={i} className={`flex items-center justify-center text-xl sm:text-2xl ${(i + Math.floor(i/8)) % 2 === 0 ? 'bg-zinc-400' : 'bg-zinc-600'}`}>
-                {p}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="text-4xl">{['⚀','⚁','⚂','⚃','⚄','⚅'][dice-1]}</div>
+                <div className="text-white font-bold">Posisi: {playerPos}</div>
               </div>
-            ))}
-          </div>
-        </div>
-      );
-    };
+              <button onClick={() => {
+                const d = Math.floor(Math.random() * 6) + 1;
+                setDice(d);
+                let newPos = Math.min(25, playerPos + d);
+                const snakes = { 12: 5, 18: 8, 24: 16 };
+                const ladders = { 3: 10, 7: 15, 14: 21 };
+                if (snakes[newPos]) newPos = snakes[newPos];
+                if (ladders[newPos]) newPos = ladders[newPos];
+                setPlayerPos(newPos);
+                if (newPos === 25) alert("Kamu Menang! 🎉");
+              }} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-xl mb-2">Lempar Dadu</button>
+              <button onClick={() => setPlayerPos(1)} className="w-full bg-zinc-800 text-white font-bold py-2 rounded-xl">Reset</button>
+            </div>
+          )}
 
-    if (type === 'tictactoe') return renderTicTacToe();
-    if (type === 'uno') return renderUno();
-    if (type === 'ular') return renderUlarTangga();
-    if (type === 'catur') return renderChess();
-    return <div className="text-white">Game belum tersedia.</div>;
+          {activeGame === 'catur' && (
+            <div className="flex flex-col items-center">
+              <div className="grid grid-cols-8 border-2 border-zinc-600 w-full aspect-square mb-4">
+                {["♜","♞","♝","♛","♚","♝","♞","♜","♟","♟","♟","♟","♟","♟","♟","♟","","","","","","","","","","","","","","","","","♙","♙","♙","♙","♙","♙","♙","♙","♖","♘","♗","♕","♔","♗","♘","♖"].map((p, i) => (
+                  <div key={i} className={`flex items-center justify-center text-lg sm:text-xl ${(i + Math.floor(i/8)) % 2 === 0 ? 'bg-zinc-400' : 'bg-zinc-600'}`}>
+                    {p}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-500 text-center">*Visual Mode. Logic full butuh library tambahan.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
 
-  // --- UI UTAMA ---
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
       {/* HEADER */}
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30">
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800">
         <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2">
           <Menu size={24} />
         </button>
@@ -415,21 +461,20 @@ export default function Home() {
       </header>
 
       {renderSidebar()}
-      {showProfileModal && renderProfileModal()}
+      {renderToolModal()}
+      {renderGameModal()}
 
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
         
         {/* TAB HOME */}
         {activeTab === "home" && (
           <>
-            {/* 1. KARTU JAM (Gambar 1 & 3 - Tema Abu) */}
+            {/* 1. KARTU JAM */}
             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
-              
               <div className="inline-block bg-zinc-700/50 border border-zinc-600 text-zinc-300 text-[10px] font-bold px-3 py-1 rounded-full mb-4 tracking-widest">
                 MIKASA PROJECT
               </div>
-              
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-white text-2xl font-bold leading-tight mb-2">Selamat Datang,<br/>{userProfile.name}</h2>
@@ -442,8 +487,6 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                
-                {/* Jam Besar */}
                 <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-zinc-600 bg-zinc-800/50 shadow-inner">
                   <span className="text-white text-2xl font-bold">{currentTime}</span>
                   <span className="text-[9px] text-zinc-400 tracking-widest mt-1">WAKTU</span>
@@ -451,19 +494,43 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 2. 3 TOMBOL BARIS (Gambar 2) */}
+            {/* 5. REAL-TIME USER LIST (Gambar 3) */}
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xs font-bold text-zinc-400 tracking-wider">PENGGUNA ONLINE</h3>
+                <span className="text-[10px] text-zinc-500">{onlineUsers.length} aktif</span>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer">
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-600 flex items-center justify-center bg-[#1c1c1e] relative">
+                    <Plus size={20} className="text-zinc-400" />
+                  </div>
+                  <span className="text-[10px] text-zinc-400">Tambah</span>
+                </div>
+                {onlineUsers.map((name, i) => (
+                  <div key={i} onClick={() => openPrivateChat(name)} className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer">
+                    <div className="w-14 h-14 rounded-full border-2 border-green-500 p-0.5">
+                      <div className="w-full h-full rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}&backgroundColor=1a1a24`} alt={name} className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. 3 TOMBOL BARIS */}
             <div className="grid grid-cols-3 gap-2">
-              <button onClick={() => setActiveTab("chat")} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
+              <button onClick={() => { setChatMode("global"); setActiveTab("chat"); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
                 <MessageSquare size={20} className="text-white" />
                 <span className="text-white text-xs font-bold">Public Chat</span>
               </button>
-              
               <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20">
                 <Phone size={20} className="text-white" />
                 <span className="text-white text-xs font-bold">Developer</span>
               </a>
-
-              <button onClick={() => { setActiveTab("games"); }} className="bg-yellow-600 hover:bg-yellow-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-yellow-900/20">
+              <button onClick={() => setActiveTab("games")} className="bg-yellow-600 hover:bg-yellow-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-yellow-900/20">
                 <Gamepad2 size={20} className="text-white" />
                 <span className="text-white text-xs font-bold">Games</span>
               </button>
@@ -493,12 +560,9 @@ export default function Home() {
               <video autoPlay muted loop playsInline className="w-full h-full object-cover">
                 <source src={VIDEO_2} type="video/mp4" />
               </video>
-              <div className="absolute bottom-4 left-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg">
-                <h2 className="text-white font-bold text-sm">Mikasa Project</h2>
-              </div>
             </div>
 
-            {/* 5. STATISTIK AKUN (Gambar 5) */}
+            {/* 5. STATISTIK AKUN */}
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-zinc-400"/> Statistik Akun</h3>
               <div className="grid grid-cols-3 gap-2">
@@ -520,36 +584,45 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 6. TOOLS GRID (Gambar 5 bagian bawah) */}
+            {/* 6. TOOLS GRID */}
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Tools</h3>
               <div className="grid grid-cols-4 gap-3">
                 {[
-                  { icon: Bug, label: "Bug WA", color: "text-red-500" },
-                  { icon: Search, label: "OSINT", color: "text-blue-500" },
-                  { icon: MessageSquare, label: "Spam", color: "text-emerald-500" },
-                  { icon: DownloadCloud, label: "Download", color: "text-pink-500" },
-                  { icon: Shield, label: "Cek Band", color: "text-yellow-500" },
-                  { icon: FileText, label: "Data GTK", color: "text-purple-500" },
-                  { icon: Globe, label: "Web Recon", color: "text-cyan-500" },
-                  { icon: Terminal, label: "API", color: "text-zinc-300" },
-                ].map((tool, i) => (
-                  <button key={i} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
+                  { id: 'bugwa', name: "Bug WA", icon: Bug, color: "text-red-500", endpoint: "/api/bug-wa", placeholder: "62xxx" },
+                  { id: 'osint', name: "OSINT", icon: Search, color: "text-blue-500", endpoint: "/api/osint-nomor", placeholder: "62xxx" },
+                  { id: 'spam', name: "Spam OTP", icon: MessageSquare, color: "text-emerald-500", endpoint: "/api/spamotp", placeholder: "62xxx" },
+                  { id: 'downloader', name: "Download", icon: DownloadCloud, color: "text-pink-500", endpoint: "/api/download/tiktok", placeholder: "Link TikTok" },
+                  { id: 'cekband', name: "Cek Band", icon: Shield, color: "text-yellow-500", endpoint: "/api/cekbandwa", placeholder: "62xxx" },
+                  { id: 'gtk', name: "Data GTK", icon: FileText, color: "text-purple-500", endpoint: "/api/cekdataguru", placeholder: "Nama/NUPTK" },
+                  { id: 'webrecon', name: "Web Recon", icon: Globe, color: "text-cyan-500", endpoint: "/api/webrecon", placeholder: "domain.com" },
+                ].map((tool) => (
+                  <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-zinc-800 transition-colors">
                     <tool.icon size={20} className={`${tool.color} mb-2`} />
-                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{tool.label}</span>
+                    <span className="text-[10px] text-zinc-300 text-center leading-tight">{tool.name}</span>
                   </button>
                 ))}
               </div>
             </div>
-
           </>
         )}
 
-        {/* TAB CHAT */}
+        {/* TAB CHAT (GLOBAL & PRIVATE) */}
         {activeTab === "chat" && (
           <div className="fixed inset-0 bg-[#0f0a15] z-40 flex flex-col pt-16 pb-20">
-            <div className="flex-1 overflow-y-auto px-4 space-y-4">
-              {globalMsgs.map((m, i) => (
+            {/* Header Chat */}
+            <div className="absolute top-0 left-0 w-full h-16 bg-[#0f0a15]/90 backdrop-blur-md flex items-center px-4 border-b border-zinc-800">
+              <button onClick={() => setActiveTab("home")} className="p-2 mr-2 text-white">
+                <ChevronLeft size={24} />
+              </button>
+              <div className="flex flex-col">
+                <span className="text-white font-bold">{chatMode === "global" ? "Public Chat" : chatTarget}</span>
+                <span className="text-[10px] text-zinc-400">{chatMode === "global" ? "Semua User" : "Private Message"}</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 pt-20 space-y-4">
+              {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => (
                 <div key={i} className={`flex ${m.from === username ? 'flex-row-reverse' : 'flex-row'} items-start gap-2`}>
                   <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-white uppercase flex-shrink-0">{m.from.charAt(0)}</div>
                   <div className={`flex flex-col ${m.from === username ? 'items-end' : 'items-start'}`}>
@@ -559,7 +632,8 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <form onSubmit={sendGlobalMsg} className="p-3 bg-[#1c1c1e] border-t border-zinc-700 flex gap-2 items-center">
+            
+            <form onSubmit={chatMode === "global" ? sendGlobalMsg : sendPrivateMsg} className="p-3 bg-[#1c1c1e] border-t border-zinc-700 flex gap-2 items-center">
               <input type="text" value={msgInput} onChange={e=>setMsgInput(e.target.value)} placeholder="Ketik pesan..." className="flex-1 bg-[#0f0a15] border border-zinc-700 rounded-full px-4 py-2 text-sm text-white focus:outline-none" />
               <button type="submit" className="bg-zinc-600 p-2 rounded-full text-white"><Send size={16} /></button>
             </form>
@@ -567,7 +641,7 @@ export default function Home() {
         )}
 
         {/* TAB GAMES */}
-        {activeTab === "games" && !activeGame && (
+        {activeTab === "games" && (
           <div>
             <button onClick={() => setActiveTab("home")} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Home</button>
             <div className="grid grid-cols-2 gap-3">
@@ -577,7 +651,7 @@ export default function Home() {
                 { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" /> },
                 { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" /> },
               ].map((game) => (
-                <div key={game.id} onClick={() => setActiveGame({ type: game.id, mode: 'npc', level: 'easy' })} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex flex-col items-center text-center cursor-pointer hover:border-zinc-500">
+                <div key={game.id} onClick={() => setActiveGame(game.id)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex flex-col items-center text-center cursor-pointer hover:border-zinc-500">
                   <div className="w-12 h-12 bg-[#0f0a15] rounded-full flex items-center justify-center mb-2">{game.icon}</div>
                   <h3 className="text-white font-bold text-sm">{game.title}</h3>
                   <span className="text-[10px] text-zinc-400 mt-2">Main vs NPC</span>
@@ -586,37 +660,23 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        {activeTab === "games" && activeGame && (
-          <div>
-            <button onClick={() => setActiveGame(null)} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Menu Game</button>
-            {renderGameEngine()}
-          </div>
-        )}
-
-        {/* TAB API/DOCS */}
-        {activeTab === "api" && (
-           <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
-              <Code2 size={48} className="mb-4 opacity-50" />
-              <p>API Documentation coming soon.</p>
-           </div>
-        )}
-
-        {/* TAB SETTINGS */}
-        {activeTab === "settings" && (
-          <div className="space-y-4">
-             <button onClick={() => setShowProfileModal(true)} className="w-full bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center gap-4">
-                <Settings size={20} className="text-zinc-400" />
-                <span className="text-white">Edit Profil</span>
-             </button>
-             <button onClick={handleLogout} className="w-full bg-red-900/20 border border-red-900/50 p-4 rounded-xl flex items-center gap-4 text-red-400">
-                <LogOut size={20} />
-                <span>Logout</span>
-             </button>
-          </div>
-        )}
-
       </main>
+
+      {/* BOTTOM NAVBAR */}
+      <div className="fixed bottom-0 w-full bg-[#1c1c1e] border-t border-zinc-700 p-2 z-30">
+        <div className="flex justify-around items-center px-2">
+           {[
+             { id: 'home', icon: <HomeIcon size={20}/>, label: 'Home' },
+             { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
+             { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
+           ].map((item) => (
+             <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
+               <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-zinc-700 text-white' : ''}`}>{item.icon}</div>
+               <span className="text-[10px]">{item.label}</span>
+             </button>
+           ))}
+        </div>
+      </div>
 
       {/* MUSIC LIBRARY MODAL */}
       {showMusicLibrary && (
@@ -652,23 +712,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* BOTTOM NAVBAR (Hanya Home, Chat, API, Settings) */}
-      <div className="fixed bottom-0 w-full bg-[#1c1c1e] border-t border-zinc-700 p-2 z-30">
-        <div className="flex justify-around items-center px-2">
-           {[
-             { id: 'home', icon: <HomeIcon size={20}/>, label: 'Home' },
-             { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
-             { id: 'api', icon: <Code2 size={20}/>, label: 'API' },
-             { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
-           ].map((item) => (
-             <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
-               <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-zinc-700 text-white' : ''}`}>{item.icon}</div>
-               <span className="text-[10px]">{item.label}</span>
-             </button>
-           ))}
-        </div>
-      </div>
 
     </div>
   );
