@@ -3,5 +3,10 @@
     "username": "Rullzzz06",
     "password": "iwaktempek",
     "role": "admin"
+  },
+  {
+    "username": "testing",
+    "password": "testing",
+    "role": "user"
   }
 ]
