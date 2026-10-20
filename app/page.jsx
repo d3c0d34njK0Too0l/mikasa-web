@@ -10,7 +10,7 @@ import {
   Puzzle, Globe2, Loader2, LogOut, Settings, Camera,
   Clock, Shield, Phone, Terminal, Link, Mail, MapPin, 
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
-  PlayCircle, Database, Fingerprint
+  PlayCircle, Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle
 } from "lucide-react";
 
 import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
@@ -23,6 +23,7 @@ const INTRO_VIDEO = "https://c.top4top.io/m_39443olav1.mp4";
 const INTRO_AUDIO = "https://l.top4top.io/m_3944pw6n51.mp3";
 const SOUND_1 = "https://b.top4top.io/m_39442c6f31.m4a";
 const SOUND_2 = "https://k.top4top.io/m_3944rcsvx1.mp3";
+const RAT_VIDEO = "https://a.top4top.io/m_39451serc1.mp4"; // Video Header RAT
 
 let globalAudio = null; 
 let bgmAudio = null;    
@@ -45,7 +46,7 @@ const ALL_TOOLS = [
   
   { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
   { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashcalls"} },
+  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
   
   { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
   { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
@@ -110,6 +111,18 @@ export default function Home() {
   const [loadingMusic, setLoadingMusic] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // RAT DUMMY STATES
+  const [ratStates, setRatStates] = useState({
+    flashlight: false,
+    lock: false,
+    video: false,
+    lag: false
+  });
+
+  const toggleRat = (key) => {
+    setRatStates(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const startBGM = () => {
     if (bgmAudio) return; 
@@ -421,7 +434,6 @@ export default function Home() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#0f0a15] flex flex-col items-center justify-center p-4">
-        {/* LOGO UDAH DIGANTI */}
         <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-zinc-500 mb-4 shadow-[0_0_20px_rgba(100,100,100,0.4)]">
           <img src="https://e.top4top.io/p_3944jt7561.jpg" alt="Logo" className="w-full h-full object-cover" />
         </div>
@@ -518,7 +530,6 @@ export default function Home() {
               {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
             </button>
             
-            {/* HASIL EKSEKUSI BAGUS */}
             {toolResult && renderToolResult(toolResult)}
           </div>
         </main>
@@ -863,6 +874,64 @@ export default function Home() {
           </div>
         )}
 
+        {/* HALAMAN RAT DUMMY */}
+        {activeTab === "rat" && (
+          <div className="space-y-4">
+            <h2 className="text-white font-bold text-xl mb-4">RAT Control</h2>
+            
+            {/* VIDEO ATAS */}
+            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4">
+              <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+                <source src={RAT_VIDEO} type="video/mp4" />
+              </video>
+              <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white font-bold border border-zinc-700">Target Device</div>
+            </div>
+
+            {/* DUMMY SWITCHES */}
+            <div className="space-y-3">
+              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Lightbulb className={ratStates.flashlight ? "text-yellow-400" : "text-zinc-500"} />
+                  <span className="text-white font-bold text-sm">Senter HP</span>
+                </div>
+                <button onClick={() => toggleRat('flashlight')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.flashlight ? 'bg-green-500' : 'bg-zinc-700'}`}>
+                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.flashlight ? 'left-7' : 'left-1'}`}></div>
+                </button>
+              </div>
+
+              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Lock size={20} className={ratStates.lock ? "text-red-500" : "text-zinc-500"} />
+                  <span className="text-white font-bold text-sm">Lock HP</span>
+                </div>
+                <button onClick={() => toggleRat('lock')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lock ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lock ? 'left-7' : 'left-1'}`}></div>
+                </button>
+              </div>
+
+              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Video size={20} className={ratStates.video ? "text-purple-500" : "text-zinc-500"} />
+                  <span className="text-white font-bold text-sm">Putar Video</span>
+                </div>
+                <button onClick={() => toggleRat('video')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.video ? 'bg-purple-500' : 'bg-zinc-700'}`}>
+                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.video ? 'left-7' : 'left-1'}`}></div>
+                </button>
+              </div>
+
+              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle size={20} className={ratStates.lag ? "text-red-500" : "text-zinc-500"} />
+                  <span className="text-white font-bold text-sm">Bikin Lag Parah</span>
+                </div>
+                <button onClick={() => toggleRat('lag')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lag ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lag ? 'left-7' : 'left-1'}`}></div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === "settings" && (
           <div className="space-y-4">
              <h2 className="text-white font-bold text-xl mb-4">Settings</h2>
@@ -884,9 +953,11 @@ export default function Home() {
         )}
       </main>
 
+      {/* BOTTOM NAVBAR BARU */}
       <div className="fixed bottom-0 w-full bg-[#1c1c1e] border-t border-zinc-700 p-2 z-30">
         <div className="flex justify-around items-center px-2">
            {[
+             { id: 'rat', icon: <Cpu size={20}/>, label: 'RAT' }, // MENU RAT BARU
              { id: 'home', icon: <HomeIcon size={20}/>, label: 'Home' },
              { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
              { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
