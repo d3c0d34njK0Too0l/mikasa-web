@@ -493,7 +493,6 @@ export default function Home() {
     );
   };
 
-
   if (showIntro) {
     return (
       <div className="min-h-screen bg-black relative flex items-center justify-center">
