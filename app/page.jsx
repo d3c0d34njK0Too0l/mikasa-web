@@ -45,7 +45,7 @@ const ALL_TOOLS = [
   
   { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
   { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
+  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashcalls"} },
   
   { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
   { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
@@ -65,7 +65,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false); 
   const [showTapToPlay, setShowTapToPlay] = useState(false); 
-  const [isScanning, setIsScanning] = useState(false); // State animasi sidik jari
+  const [isScanning, setIsScanning] = useState(false); 
   
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -175,12 +175,10 @@ export default function Home() {
     setShowTapToPlay(false); 
   };
 
-  // FUNGSI ANIMASI SIDIK JARI
   const handleFingerprintTap = () => {
     if (isScanning) return;
     setIsScanning(true);
     
-    // Delay bentar buat nampilin animasi centang
     setTimeout(() => {
       startBGM();
       setShowTapToPlay(false);
@@ -344,7 +342,6 @@ export default function Home() {
     }
   };
 
-  // --- FUNGSI RENDER HASIL TOOL (UI BAGUS) ---
   const renderToolResult = (data) => {
     if (!data) return null;
 
@@ -424,8 +421,9 @@ export default function Home() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#0f0a15] flex flex-col items-center justify-center p-4">
+        {/* LOGO UDAH DIGANTI */}
         <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-zinc-500 mb-4 shadow-[0_0_20px_rgba(100,100,100,0.4)]">
-          <img src="https://i.pinimg.com/736x/8c/7d/2c/8c7d2c6d8e3b5f1d2e3c4b5a6f7e8d9c.jpg" alt="Logo" className="w-full h-full object-cover" />
+          <img src="https://e.top4top.io/p_3944jt7561.jpg" alt="Logo" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-2xl font-bold text-white tracking-widest mb-8">MIKASA PROJECT</h1>
         <div className="bg-[#1c1c1e] p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-zinc-700">
@@ -605,28 +603,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
       
-      {/* OVERLAY FINGERPRINT (BUKAN POPUP) */}
+      {/* OVERLAY FINGERPRINT */}
       {showTapToPlay && (
         <div 
           onClick={handleFingerprintTap} 
           className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-500"
         >
-          {/* Animasi Sidik Jari */}
           <div className={`relative flex items-center justify-center w-32 h-32 rounded-full border-2 transition-all duration-300 ${isScanning ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]' : 'border-zinc-600'}`}>
-             {/* Ikon Sidik Jari */}
              <Fingerprint 
                 size={64} 
                 className={`transition-colors duration-300 ${isScanning ? 'text-green-500' : 'text-zinc-400'}`} 
              />
-             
-             {/* Animasi Centang Muncul */}
              {isScanning && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm">
                    <CheckCircle2 size={64} className="text-green-500 animate-in zoom-in spin-in-12 duration-500" />
                 </div>
              )}
           </div>
-
           <h2 className={`text-white text-xl font-bold mt-8 transition-colors duration-300 ${isScanning ? 'text-green-400' : 'text-white'}`}>
             {isScanning ? "Autentikasi Berhasil" : "Sentuh Sidik Jari"}
           </h2>
