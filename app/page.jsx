@@ -34,12 +34,13 @@ let bgmAudio = null;
 
 function loadAvatarMap() {
   try {
+    if (typeof window === "undefined") return {};
     const raw = localStorage.getItem("mikasa_avatars");
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 function saveAvatarMap(map) {
-  try { localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
+  try { if (typeof window !== "undefined") localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
 }
 function getAvatarFor(uname) {
   if (typeof window === "undefined") return "";
@@ -154,6 +155,7 @@ function dateFmt(ts) {
 }
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [showTapToPlay, setShowTapToPlay] = useState(false);
@@ -238,12 +240,14 @@ export default function Home() {
   const [lockPin, setLockPin] = useState("");
 
   useEffect(() => {
+    setMounted(true);
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [globalMsgs, privateMsgs, activeTab, chatMode, chatTarget]);
 
   useEffect(() => {
+    if (!mounted) return;
     const savedUser = localStorage.getItem("mikasa_user");
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
@@ -280,12 +284,12 @@ export default function Home() {
       .catch(() => {});
 
     return () => clearInterval(timer);
-  }, []);
+  }, [mounted]);
 
   const addPoints = (amount) => {
     setGamePoints(prev => {
       const newPoints = prev + amount;
-      localStorage.setItem(`mikasa_points_${username || "guest"}`, newPoints);
+      if (typeof window !== "undefined") localStorage.setItem(`mikasa_points_${username || "guest"}`, newPoints);
       return newPoints;
     });
   };
@@ -711,6 +715,8 @@ export default function Home() {
       </div>
     );
   };
+
+  if (!mounted) return null;
 
   if (showIntro) {
     return (
