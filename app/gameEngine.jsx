@@ -221,7 +221,8 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
     <div className="w-full">
       <p className="text-xs text-center text-zinc-400 mb-2 h-4">{status}</p>
       <div className="min-h-5 mb-1">{renderEaten(eatenByNpc, mode === "pvp" ? (myColor === "w" ? "b" : "w") : "w")}</div>
-      <div className="grid grid-cols-8 w-full aspect-square mb-1 rounded-md overflow-hidden border-2 border-zinc-600 select-none">
+      
+      <div className="w-full aspect-square mb-1 rounded-md overflow-hidden border-2 border-zinc-600 select-none grid grid-cols-8">
         {board.map((row, r) =>
           row.map((cell, c) => {
             const square = FILES[c] + RANKS[r];
@@ -235,7 +236,7 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
             if (isSel) bg = "#f6d365";
             if (isCheckSq) bg = "#e5484d";
             return (
-              <div key={square} onClick={() => handleClick(r, c)} className="relative flex items-center justify-center cursor-pointer" style={{ backgroundColor: bg }}>
+              <div key={square} onClick={() => handleClick(r, c)} className="relative flex items-center justify-center cursor-pointer aspect-square" style={{ backgroundColor: bg }}>
                 {cell && <span className="text-[clamp(22px,8.5vw,36px)] leading-none" style={cell.color === "w" ? whiteStyle : blackStyle}>{GLYPH[cell.type] + NO_EMOJI}</span>}
                 {target && !cell && <div className="absolute w-1/3 h-1/3 rounded-full bg-black/25" />}
                 {target && cell && <div className="absolute inset-0.5 rounded-full border-4 border-black/30" />}
@@ -246,6 +247,7 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
           })
         )}
       </div>
+
       <div className="min-h-5 mb-3">{renderEaten(eatenByMe, mode === "pvp" ? myColor : "b")}</div>
       <div className="flex gap-2">
         {mode === "npc" && (
@@ -401,7 +403,6 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
     if (onMove) onMove(next);
   };
 
-  const seats = mode === "npc" ? [mySeat, 1, 2, 3].filter(x => x === mySeat || x !== 0) : [0, 1];
   const displaySeats = mode === "pvp" ? [0, 1] : [1, 2, 3];
 
   return (
@@ -414,7 +415,7 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
               {s.hands[n].slice(0, 8).map((_, j) => (<div key={j} className="w-6 h-10 bg-zinc-700 border border-zinc-500 rounded-sm" />))}
             </div>
             <span className={`text-[10px] mt-1 ${s.turn === n ? "text-yellow-400 font-bold" : "text-zinc-400"}`}>
-              {mode === "pvp" ? `Lawan (${s.hands[n].length})` : `NPC${n} (${s.hands[n].length})`}
+              {mode === "pvp" ? `Lawan (${s.hands[n].length})` : `NPC ${n} (${s.hands[n].length})`}
             </span>
           </div>
         ))}
@@ -448,7 +449,7 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
       {s.winner !== null ? (
         <Btn onClick={reset}><RotateCcw size={16} /> Main lagi</Btn>
       ) : myTurn && s.drew && (
-        <Btn onClick={() => setS((p) => unoPass(p, mySeat, "Kamu melewati giliran."))}>Lewati</Btn>
+        <Btn onClick={() => { const next = unoPass(s, mySeat, "Kamu melewati giliran."); setS(next); if(onMove) onMove(next); }}>Lewati</Btn>
       )}
     </div>
   );
