@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Trophy, RotateCcw, Undo2, X, Users } from "lucide-react";
+import { Trophy, RotateCcw, Undo2, X, User } from "lucide-react";
 import { Chess } from "chess.js";
 
 const isOver = (g) => (g.isGameOver ? g.isGameOver() : g.game_over());
@@ -98,11 +98,12 @@ const NO_EMOJI = "\uFE0E";
 const whiteStyle = { color: "#fff", textShadow: "0 0 2px #000, 0 0 2px #000, 0 1px 2px #000" };
 const blackStyle = { color: "#111", textShadow: "0 0 1px rgba(255,255,255,.35)" };
 
-export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w", serverFen = null, serverLast = null, onMove = null, opponentName = "NPC" }) {
+export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w", serverFen = null, serverLast = null, onMove = null, opponentName = "NPC", onWin = null }) {
   const chessRef = useRef(new Chess(serverFen || undefined));
   const [fen, setFen] = useState(serverFen || chessRef.current.fen());
   const [selected, setSelected] = useState(null);
   const [thinking, setThinking] = useState(false);
+  const [hasWon, setHasWon] = useState(false);
 
   useEffect(() => {
     if (serverFen && serverFen !== chessRef.current.fen()) {
@@ -142,8 +143,12 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
   let status;
   if (over) {
     if (isMate(g)) {
-      if (mode === "pvp") status = turn === myColor ? "Skakmat! Kamu kalah 💀" : "Skakmat! Kamu menang 🎉";
-      else status = turn === "b" ? "Skakmat! Kamu menang 🎉" : "Skakmat! Kamu kalah 💀";
+      if (mode === "pvp") status = turn === myColor ? "Checkmate! You Lose" : "Checkmate! You Winn!";
+      else status = turn === "b" ? "Checkmate! You Winn" : "Checkmate! You Losee";
+      
+      if ((mode === "npc" && turn === "b") || (mode === "pvp" && turn !== myColor)) {
+        if (!hasWon) { setHasWon(true); if (onWin) onWin(); }
+      }
     } else status = "Seri!";
   } else if (mode === "npc" && (thinking || turn === "b")) status = "NPC mikir...";
   else if (!myTurn && mode === "pvp") status = `Menunggu ${opponentName}...`;
@@ -151,9 +156,9 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
   else status = mode === "pvp" ? `Giliranmu (${myColor === "w" ? "Putih" : "Hitam"})` : "Giliranmu (Putih)";
 
   useEffect(() => {
-    if (mode !== "npc") return;
+    if (mode !== "npc" || over) return;
     const game = chessRef.current;
-    if (game.turn() !== "b" || isOver(game)) return;
+    if (game.turn() !== "b") return;
     setThinking(true);
     const timer = setTimeout(() => {
       const move = chooseNpcMove(game, level);
@@ -162,11 +167,8 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
       setFen(game.fen());
       if (onMove) onMove({ from: move.from, to: move.to, promotion: move.promotion || "q", fen: game.fen() });
     }, 450);
-    return () => {
-      clearTimeout(timer);
-      setThinking(false);
-    };
-  }, [fen, level, mode]);
+    return () => { clearTimeout(timer); setThinking(false); };
+  }, [fen, level, mode, over]);
 
   const handleClick = (r, c) => {
     if (over || !myTurn || thinking) return;
@@ -181,9 +183,7 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
           const moveObj = { from: selected, to: square, promotion: "q" };
           const result = g.move(moveObj);
           setFen(g.fen());
-          if (onMove && result) {
-            onMove({ from: selected, to: square, promotion: "q", fen: g.fen() });
-          }
+          if (onMove && result) onMove({ from: selected, to: square, promotion: "q", fen: g.fen() });
         } catch (e) {}
       }
       return setSelected(null);
@@ -194,13 +194,13 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
   const handleReset = () => {
     chessRef.current = new Chess();
     setSelected(null);
+    setHasWon(false);
     setFen(chessRef.current.fen());
     if (onMove) onMove({ reset: true });
   };
 
   const handleUndo = () => {
-    if (mode === "pvp") return;
-    if (thinking || !history.length) return;
+    if (mode === "pvp" || thinking || !history.length) return;
     g.undo();
     if (g.turn() === "b") g.undo();
     setSelected(null);
@@ -209,11 +209,7 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
 
   const renderEaten = (list, color) => (
     <div className="flex h-5 items-center gap-0.5 text-base leading-none">
-      {list.map((t, i) => (
-        <span key={i} style={color === "w" ? whiteStyle : blackStyle}>
-          {GLYPH[t] + NO_EMOJI}
-        </span>
-      ))}
+      {list.map((t, i) => (<span key={i} style={color === "w" ? whiteStyle : blackStyle}>{GLYPH[t] + NO_EMOJI}</span>))}
     </div>
   );
 
@@ -266,6 +262,9 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
 const rand = (n) => Math.floor(Math.random() * n);
 const pick = (arr) => arr[rand(arr.length)];
 
+const NPC_NAMES = ["Alex", "John", "Sarah", "David", "Emma", "Michael", "Sophia", "James", "Olivia", "Daniel", "Isabella", "William", "Mia", "Lucas", "Charlotte"];
+const getNpcName = () => pick(NPC_NAMES);
+
 const Btn = ({ children, className = "", ...p }) => (
   <button {...p} className={`w-full bg-zinc-600 text-white font-bold py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 ${className}`}>
     {children}
@@ -286,7 +285,7 @@ function unoCard() {
   if (r < 0.34) return { color, val: "+2" };
   return { color, val: rand(10) };
 }
-const unoLabel = (c) => ({ skip: "⊘", rev: "⇄", wild: "★" }[c.val] ?? String(c.val));
+const unoLabel = (c) => ({ skip: "⊘", rev: "⇄", wild: "WARNA" }[c.val] ?? String(c.val));
 const unoPlayable = (c, top, color) => c.color === "wild" || c.color === color || c.val === top.val;
 const unoNext = (p, dir, n = 1) => (((p + dir * n) % 4) + 4) % 4;
 
@@ -302,6 +301,7 @@ export function unoInit() {
     drew: false,
     winner: null,
     msg: "Giliranmu! Cocokkan warna atau angka.",
+    npcNames: [getNpcName(), getNpcName(), getNpcName()]
   };
 }
 
@@ -328,26 +328,33 @@ function unoPlay(s, p, idx, chosen) {
   }
   if (card.color === "wild") notes.push(`warna jadi ${color}`);
   const won = hands[p].length === 0;
-  if (!won && hands[p].length === 1) notes.push("UNO! 🔥");
+  if (!won && hands[p].length === 1) notes.push("UNO!");
+  
   let msg = `Main ${card.color === "wild" ? "" : card.color + " "}${unoLabel(card)}`;
   if (notes.length) msg += " — " + notes.join(", ");
-  if (won) msg = p === 0 ? "KAMU MENANG! 🎉" : `MENANG! 💀`;
+  if (won) msg = p === 0 ? "You Winn!!" : `WINNER!!`;
+  
   return { hands, top: card, color, dir, drew: false, winner: won ? p : null, turn: won ? p : unoNext(p, dir, steps), msg };
 }
 
-export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null, onMove = null, opponentName = "NPC" }) {
+export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null, onMove = null, opponentName = "NPC", onWin = null }) {
   const [s, setS] = useState(() => serverState || unoInit());
   const [wildIdx, setWildIdx] = useState(null);
+  const [hasWon, setHasWon] = useState(false);
 
   useEffect(() => {
     if (serverState) setS(serverState);
   }, [serverState]);
 
+  useEffect(() => {
+    if (s.winner === 0 && !hasWon) { setHasWon(true); if (onWin) onWin(); }
+  }, [s.winner, hasWon, onWin]);
+
   const myTurn = s.turn === mySeat && s.winner === null;
 
   useEffect(() => {
-    if (mode !== "npc") return;
-    if (s.turn === 0 || s.winner !== null) return;
+    if (mode !== "npc" || s.winner !== null) return;
+    if (s.turn === 0) return;
     const t = setTimeout(() => {
       setS((prev) => {
         if (prev.turn === 0 || prev.winner !== null) return prev;
@@ -398,6 +405,7 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
 
   const reset = () => {
     setWildIdx(null);
+    setHasWon(false);
     const next = unoInit();
     setS(next);
     if (onMove) onMove(next);
@@ -411,18 +419,21 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
       <div className="flex justify-between w-full mb-4">
         {displaySeats.map((n) => (
           <div key={n} className={`flex flex-col items-center ${s.turn === n ? "opacity-100" : "opacity-60"}`}>
+            <div className="w-10 h-10 rounded-full border-2 border-zinc-700 bg-zinc-800 flex items-center justify-center mb-2 overflow-hidden">
+              {mode === "pvp" ? <User size={20} className="text-zinc-400" /> : <User size={20} className="text-zinc-500" />}
+            </div>
             <div className="flex -space-x-4 h-10">
               {s.hands[n].slice(0, 8).map((_, j) => (<div key={j} className="w-6 h-10 bg-zinc-700 border border-zinc-500 rounded-sm" />))}
             </div>
             <span className={`text-[10px] mt-1 ${s.turn === n ? "text-yellow-400 font-bold" : "text-zinc-400"}`}>
-              {mode === "pvp" ? `Lawan (${s.hands[n].length})` : `NPC ${n} (${s.hands[n].length})`}
+              {mode === "pvp" ? `Lawan (${s.hands[n].length})` : `${s.npcNames ? s.npcNames[n-1] : "NPC"} (${s.hands[n].length})`}
             </span>
           </div>
         ))}
       </div>
       <div className="flex justify-center items-center gap-4 mb-2">
         <div onClick={draw} className={`w-20 h-28 rounded-xl flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-lg bg-zinc-800 text-center leading-tight ${myTurn && !s.drew ? "cursor-pointer" : "opacity-40"}`}>Ambil</div>
-        <div className={`w-20 h-28 rounded-xl flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-lg ${UNO_BG[s.color]}`}>{unoLabel(s.top)}</div>
+        <div className={`w-20 h-28 rounded-xl flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-lg ${UNO_BG[s.color]} text-center leading-tight`}>{unoLabel(s.top)}</div>
       </div>
       <div className="flex justify-center items-center gap-2 text-xs text-zinc-400 mb-4">
         <span className="w-3 h-3 rounded-full" style={{ background: UNO_DOT[s.color] }} />
@@ -468,7 +479,7 @@ const cellXY = (n) => {
 };
 
 export function ularInit() {
-  return { pos: [0, 0, 0, 0], turn: 0, winner: null, msg: "Lempar dadu untuk mulai!", id: 0 };
+  return { pos: [0, 0, 0, 0], turn: 0, winner: null, msg: "Lempar dadu untuk mulai!", id: 0, npcNames: [getNpcName(), getNpcName(), getNpcName()] };
 }
 
 function applyRoll(s, d) {
@@ -483,18 +494,23 @@ function applyRoll(s, d) {
   const extra = d === 6 && !won;
   let msg = `Dapat ${d}, ${note}.`;
   if (extra) msg += " Dadu 6, main lagi!";
-  if (won) msg = p === 0 ? "KAMU MENANG! 🎉" : `MENANG! 💀`;
+  if (won) msg = p === 0 ? "YOU WINN" : `WINNER`;
   return { pos, winner: won ? p : null, turn: won || extra ? p : (p + 1) % 4, msg, id: s.id + 1 };
 }
 
-export function GameUlarTangga({ onClose, mode = "npc", mySeat = 0, serverState = null, onMove = null }) {
+export function GameUlarTangga({ onClose, mode = "npc", mySeat = 0, serverState = null, onMove = null, onWin = null }) {
   const [s, setS] = useState(() => serverState || ularInit());
   const [dice, setDice] = useState(0);
   const [rolling, setRolling] = useState(false);
+  const [hasWon, setHasWon] = useState(false);
 
   useEffect(() => {
     if (serverState) setS(serverState);
   }, [serverState]);
+
+  useEffect(() => {
+    if (s.winner === 0 && !hasWon) { setHasWon(true); if (onWin) onWin(); }
+  }, [s.winner, hasWon, onWin]);
 
   const roll = (cb) => {
     setRolling(true);
@@ -527,14 +543,14 @@ export function GameUlarTangga({ onClose, mode = "npc", mySeat = 0, serverState 
   };
 
   useEffect(() => {
-    if (mode !== "npc") return;
-    if (s.turn === 0 || s.winner !== null) return;
+    if (mode !== "npc" || s.turn === 0 || s.winner !== null) return;
     const t = setTimeout(rollFor, 800);
     return () => clearTimeout(t);
   }, [s.id, mode]);
 
   const reset = () => {
     setDice(0);
+    setHasWon(false);
     const next = { ...ularInit(), id: s.id + 1000 };
     setS(next);
     if (onMove) onMove(next);
@@ -588,7 +604,7 @@ export function GameUlarTangga({ onClose, mode = "npc", mySeat = 0, serverState 
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className={`flex items-center gap-2 text-xs ${s.turn === i && s.winner === null ? "text-yellow-400 font-bold" : "text-zinc-300"}`}>
             <div className={`w-3 h-3 rounded-full ${PLAYER_COLORS[i]}`} />
-            Player {i + 1} ({s.pos[i] === 0 ? "start" : s.pos[i]})
+            {i === 0 ? "Kamu" : (s.npcNames ? s.npcNames[i-1] : `Player ${i+1}`)} ({s.pos[i] === 0 ? "start" : s.pos[i]})
           </div>
         ))}
       </div>
@@ -617,13 +633,13 @@ const SPY_PAIRS = [
   { civ: "Sepatu", spy: "Sandal", ch: ["tali", "kaos kaki", "tertutup", "olahraga"], sh: ["jepit", "santai", "terbuka", "masjid"] },
   { civ: "Pizza", spy: "Burger", ch: ["Italia", "keju", "oven", "irisan"], sh: ["roti", "patty", "drive-thru", "saus"] },
 ];
-const SPY_NAMES = ["Kamu", "Budi", "Siti", "Joko", "Rina", "Dewi"];
 
 function spyInit() {
   const pair = pick(SPY_PAIRS);
   const spyIdx = rand(6);
   const taken = new Set();
-  const players = SPY_NAMES.map((name, i) => {
+  const npcNames = [getNpcName(), getNpcName(), getNpcName(), getNpcName(), getNpcName()];
+  const players = ["Kamu", ...npcNames].map((name, i) => {
     const isSpy = i === spyIdx;
     const list = isSpy ? pair.sh : pair.ch;
     let hint = null;
@@ -655,8 +671,9 @@ function spyVotes(players, myVote) {
   return { votes, out: pick(top) };
 }
 
-export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = null }) {
+export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = null, onWin = null }) {
   const [g, setG] = useState(() => serverState || spyInit());
+  const [hasWon, setHasWon] = useState(false);
 
   useEffect(() => {
     if (serverState) setG(serverState);
@@ -678,6 +695,10 @@ export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = nu
   const r = g.result;
   const spyOut = r ? r.out === spyIdx : false;
   const iWin = r ? (me.isSpy ? !spyOut : spyOut) : false;
+
+  useEffect(() => {
+    if (iWin && !hasWon) { setHasWon(true); if (onWin) onWin(); }
+  }, [iWin, hasWon, onWin]);
 
   return (
     <div className="w-full">
@@ -715,7 +736,7 @@ export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = nu
         <div className="space-y-3 mt-3">
           <div className="text-center">
             <Trophy size={40} className={`mx-auto mb-1 ${iWin ? "text-yellow-500" : "text-zinc-600"}`} />
-            <p className="text-white font-bold">{iWin ? "Kamu menang! 🎉" : "Kamu kalah 💀"}</p>
+            <p className="text-white font-bold">{iWin ? "YEAH YOU LOSE!" : "YOU WINNER!!"}</p>
             <p className="text-xs text-zinc-400 mt-1">{g.players[r.out].name} tersingkir {spyOut ? "— SPY." : `— warga. Spy: ${g.players[spyIdx].name}.`}</p>
           </div>
           <div className="bg-[#0f0a15] border border-zinc-700 rounded-xl divide-y divide-zinc-800">
@@ -726,7 +747,7 @@ export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = nu
               </div>
             ))}
           </div>
-          <Btn onClick={() => { const n = spyInit(); setG(n); if (onMove) onMove(n); }}><RotateCcw size={16} /> Main lagi</Btn>
+          <Btn onClick={() => { const n = spyInit(); setG(n); setHasWon(false); if (onMove) onMove(n); }}><RotateCcw size={16} /> Main lagi</Btn>
         </div>
       )}
     </div>
@@ -775,7 +796,7 @@ export function tttMove(b, level) {
 }
 
 export function tttInit() {
-  return { board: Array(9).fill(null), turn: "X", round: 1, scores: { x: 0, o: 0, d: 0 }, result: null, line: [], final: false };
+  return { board: Array(9).fill(null), turn: "X", round: 1, scores: { x: 0, o: 0, d: 0 }, result: null, line: [], final: false, npcName: getNpcName() };
 }
 
 export function tttPlace(s, i, mark) {
@@ -788,16 +809,26 @@ export function tttPlace(s, i, mark) {
   return { ...s, board, scores, result: r.w, line: r.line };
 }
 
-export function GameTicTacToe({ level = "medium", onClose, mode = "npc", myMark = "X", serverState = null, onMove = null, opponentName = "NPC" }) {
+export function GameTicTacToe({ level = "medium", onClose, mode = "npc", myMark = "X", serverState = null, onMove = null, opponentName = "NPC", onWin = null }) {
   const [s, setS] = useState(() => serverState || tttInit());
+  const [hasWon, setHasWon] = useState(false);
 
   useEffect(() => {
     if (serverState) setS(serverState);
   }, [serverState]);
 
   useEffect(() => {
-    if (mode !== "npc") return;
-    if (s.turn !== "O" || s.result || s.final) return;
+    if (s.final && !hasWon) {
+      const { x, o } = s.scores;
+      if ((myMark === "X" && x > o) || (myMark === "O" && o > x)) {
+        setHasWon(true);
+        if (onWin) onWin();
+      }
+    }
+  }, [s.final, s.scores, myMark, hasWon, onWin]);
+
+  useEffect(() => {
+    if (mode !== "npc" || s.turn !== "O" || s.result || s.final) return;
     const t = setTimeout(() => {
       setS((p) => {
         if (p.turn !== "O" || p.result || p.final) return p;
@@ -830,13 +861,13 @@ export function GameTicTacToe({ level = "medium", onClose, mode = "npc", myMark 
   };
 
   let msg;
-  if (s.result === myMark) msg = "Kamu menang ronde ini!";
-  else if (s.result && s.result !== "Draw") msg = "Lawan menang ronde ini!";
+  if (s.result === myMark) msg = "You Win this round!";
+  else if (s.result && s.result !== "Draw") msg = "opponent wins this round!";
   else if (s.result === "Draw") msg = "Seri!";
   else msg = s.turn === myMark ? "Giliranmu" : `Menunggu ${opponentName}...`;
 
   const { x, o, d } = s.scores;
-  const verdict = myMark === "X" ? (x > o ? "Kamu menang! 🎉" : x < o ? "Kamu kalah 💀" : "Seri!") : (o > x ? "Kamu menang! 🎉" : o < x ? "Kamu kalah 💀" : "Seri!");
+  const verdict = myMark === "X" ? (x > o ? "You Winn! " : x < o ? "You lose " : "Seri!") : (o > x ? "Youu Winnn" : o < x ? "Youu lose " : "Seri!");
 
   return (
     <div className="w-full">
@@ -857,7 +888,7 @@ export function GameTicTacToe({ level = "medium", onClose, mode = "npc", myMark 
         <div className="text-center space-y-3">
           <Trophy size={40} className="mx-auto text-yellow-500" />
           <p className="text-white font-bold">{verdict} ({x} - {o}, seri {d})</p>
-          <Btn onClick={() => { const n = tttInit(); setS(n); if (onMove) onMove(n); }}><RotateCcw size={16} /> Main lagi</Btn>
+          <Btn onClick={() => { const n = tttInit(); setS(n); setHasWon(false); if (onMove) onMove(n); }}><RotateCcw size={16} /> Main lagi</Btn>
         </div>
       )}
     </div>
