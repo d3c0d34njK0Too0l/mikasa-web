@@ -17,7 +17,7 @@ import {
 import {
   GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe,
   unoInit, ularInit, tttInit
-} from "./gameEngine";
+} from "./gameEngine.jsx";
 
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
