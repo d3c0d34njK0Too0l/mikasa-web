@@ -11,13 +11,13 @@ import {
   Clock, Shield, Phone, Link, Mail, MapPin,
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
   Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle,
-  Swords, Trophy, Moon
+  Swords, UserPlus, Timer
 } from "lucide-react";
 
 import {
   GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe,
   unoInit, ularInit, tttInit
-} from "./gameEngine"; // Pastikan file gameEngine.jsx ada
+} from "./gameEngine";
 
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
@@ -34,13 +34,12 @@ let bgmAudio = null;
 
 function loadAvatarMap() {
   try {
-    if (typeof window === "undefined") return {};
     const raw = localStorage.getItem("mikasa_avatars");
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 function saveAvatarMap(map) {
-  try { if (typeof window !== "undefined") localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
+  try { localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
 }
 function getAvatarFor(uname) {
   if (typeof window === "undefined") return "";
@@ -60,6 +59,7 @@ const ALL_TOOLS = [
   { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", desc: "Mengirim pesan anonim massal ke akun NGL.", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500" },
   { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", desc: "Mengirim laporan spam ke WhatsApp.", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500" },
   { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", desc: "Mengirim spam email ke alamat target.", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400" },
+
   { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", desc: "Melacak informasi dari nomor HP target.", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500" },
   { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", desc: "Melacak akun media sosial berdasarkan username.", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500" },
   { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", desc: "Melacak lokasi dan info dari alamat IP.", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500" },
@@ -67,12 +67,15 @@ const ALL_TOOLS = [
   { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", desc: "Membaca informasi dari nomor NIK.", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500" },
   { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", desc: "Mengecek kepemilikan e-wallet dari nomor.", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500" },
   { id: 'doxschool', name: "DoxSchool", sub: "Dump Data", desc: "Dump database sekolah berdasarkan NPSN.", endpoint: "/api/doxschool", payload: "npsn", placeholder: "8 digit NPSN", cat: "OSINT", icon: Database, color: "text-amber-500" },
+
   { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
   { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
   { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
+
   { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
   { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
   { id: 'fb', name: "FB DL", sub: "Unduh Video", desc: "Mengunduh video dari link Facebook.", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600" },
+
   { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", desc: "Mencari informasi wilayah dari kode pos.", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500" },
   { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", desc: "Mencari data sekolah berdasarkan NPSN.", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500" },
   { id: 'cekff', name: "Cek FF", sub: "Nickname FF", desc: "Mengecek nickname Free Fire dari UID.", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500" },
@@ -89,14 +92,6 @@ const GAMES = [
   { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" />, desc: "Bo10 seru" },
   { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" />, desc: "Dadu & ular" },
   { id: "spy", title: "Who's The Spy", icon: <Users size={24} className="text-purple-400" />, desc: "Tebak penyusup" },
-];
-
-const THEMES = [
-  { id: "hijau", color: "bg-emerald-700/80 text-white" },
-  { id: "biru", color: "bg-blue-700/80 text-white" },
-  { id: "merah", color: "bg-red-700/80 text-white" },
-  { id: "ungu", color: "bg-purple-700/80 text-white" },
-  { id: "abu", color: "bg-zinc-700/80 text-white" },
 ];
 
 function UserAvatar({ name, avatarMap = {}, size = 14, border = "border-zinc-600" }) {
@@ -124,12 +119,11 @@ function dateFmt(ts) {
 }
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
-  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [showTapToPlay, setShowTapToPlay] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -148,19 +142,18 @@ export default function Home() {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [serverAvatars, setServerAvatars] = useState({});
+
   const [globalMsgs, setGlobalMsgs] = useState([]);
   const [privateMsgs, setPrivateMsgs] = useState([]);
   const [msgInput, setMsgInput] = useState("");
   const [chatMode, setChatMode] = useState("global");
   const [chatTarget, setChatTarget] = useState(null);
+
   const [unreadGlobal, setUnreadGlobal] = useState(0);
   const [unreadPrivMap, setUnreadPrivMap] = useState({});
   const [unreadTotal, setUnreadTotal] = useState(0);
-  const chatScrollRef = useRef(null);
 
-  const [chatBubbleColor, setChatBubbleColor] = useState("hijau");
-  const [prayerTimes, setPrayerTimes] = useState(null);
-  const [gamePoints, setGamePoints] = useState(0);
+  const chatScrollRef = useRef(null);
 
   const [toolCategory, setToolCategory] = useState("Semua");
   const [activeTool, setActiveTool] = useState(null);
@@ -183,8 +176,6 @@ export default function Home() {
   const [gameLevel, setGameLevel] = useState("medium");
   const [isQueueing, setIsQueueing] = useState(false);
   const [gameMessage, setGameMessage] = useState("");
-  const [roomNameInput, setRoomNameInput] = useState("");
-  const [roomKeyInput, setRoomKeyInput] = useState("");
 
   const [musicSearch, setMusicSearch] = useState("");
   const [musicResults, setMusicResults] = useState([]);
@@ -203,14 +194,12 @@ export default function Home() {
   const [lockPin, setLockPin] = useState("");
 
   useEffect(() => {
-    setMounted(true);
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [globalMsgs, privateMsgs, activeTab, chatMode, chatTarget]);
 
   useEffect(() => {
-    if (!mounted) return;
     const savedUser = localStorage.getItem("mikasa_user");
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
@@ -227,12 +216,6 @@ export default function Home() {
       setShowTapToPlay(true);
     }
 
-    const savedTheme = localStorage.getItem("mikasa_theme");
-    if (savedTheme) setChatBubbleColor(savedTheme);
-
-    const savedPoints = localStorage.getItem(`mikasa_points_${savedUser ? JSON.parse(savedUser).username : "guest"}`);
-    if (savedPoints) setGamePoints(parseInt(savedPoints, 10));
-
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' }));
@@ -241,21 +224,8 @@ export default function Home() {
       setRuntime(`${hours}:${minutes}`);
     }, 1000);
 
-    fetch(`https://api.myquran.com/v1/sholat/jadwal/1301/${new Date().toISOString().split('T')[0]}`)
-      .then(r => r.json())
-      .then(d => { if(d.status) setPrayerTimes(d.data.jadwal); })
-      .catch(() => {});
-
     return () => clearInterval(timer);
-  }, [mounted]);
-
-  const addPoints = (amount) => {
-    setGamePoints(prev => {
-      const newPoints = prev + amount;
-      if (typeof window !== "undefined") localStorage.setItem(`mikasa_points_${username || "guest"}`, newPoints);
-      return newPoints;
-    });
-  };
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -308,7 +278,6 @@ export default function Home() {
     if(ratSocket) ratSocket.close();
     if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
     if(globalAudio) { globalAudio.pause(); globalAudio = null; }
-    setGamePoints(0);
   };
 
   useEffect(() => {
@@ -380,7 +349,13 @@ export default function Home() {
       });
 
       newSocket.on('game_opponent_move', ({ move }) => {
-        setGameState((prev) => (prev ? { ...prev, ...move } : prev));
+        setGameState((prev) => {
+          if (!prev) return prev;
+          if (prev.board && Array.isArray(prev.board)) {
+            return { ...prev, ...move };
+          }
+          return { ...prev, ...move };
+        });
       });
 
       newSocket.on('game_opponent_left', () => {
@@ -466,7 +441,7 @@ export default function Home() {
     setGameRoomId(null);
     setGameOpponent(null);
     setGameMessage("Menghubungkan ke server...");
-    socket.emit('game_join_queue', { game: gameId, username, roomName: roomNameInput, roomKey: roomKeyInput });
+    socket.emit('game_join_queue', { game: gameId, username });
   };
 
   const leaveQueue = () => {
@@ -497,10 +472,6 @@ export default function Home() {
     if (gameMode === 'pvp' && socket && gameRoomId) {
       socket.emit('game_move', { roomId: gameRoomId, username, move });
     }
-  };
-
-  const handleGameWin = () => {
-    addPoints(50); // Tambah poin tiap menang
   };
 
   const handleSearchMusic = async (e) => {
@@ -659,11 +630,6 @@ export default function Home() {
     finally { setSenderLoading(false); }
   };
 
-  const changeTheme = (themeId) => {
-    setChatBubbleColor(themeId);
-    localStorage.setItem("mikasa_theme", themeId);
-  };
-
   const renderToolResult = (data) => {
     if (!data) return null;
     const renderValue = (val) => {
@@ -709,8 +675,6 @@ export default function Home() {
       </div>
     );
   };
-
-  if (!mounted) return null;
 
   if (showIntro) {
     return (
@@ -930,12 +894,9 @@ export default function Home() {
 
               <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
                 <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Swords size={16} className="text-red-400" /> Multiplayer Online</h3>
-                <div className="space-y-3 mb-3">
-                  <input type="text" value={roomNameInput} onChange={(e) => setRoomNameInput(e.target.value)} placeholder="Nama Room (wajib)" className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-2 text-sm text-white focus:outline-none" />
-                  <input type="text" value={roomKeyInput} onChange={(e) => setRoomKeyInput(e.target.value)} placeholder="Key Room (kosongkan jika publik)" className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-2 text-sm text-white focus:outline-none" />
-                </div>
+                <p className="text-xs text-zinc-400 mb-3">Cari lawan online dari pengguna lain yang sedang buka game ini.</p>
                 <button onClick={() => startQueue(activeGame)} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                  <Users size={18} /> Buat / Cari Room
+                  <Users size={18} /> Cari Lawan Online
                 </button>
               </div>
             </div>
@@ -956,11 +917,11 @@ export default function Home() {
 
           {gameMode === 'npc' && !inQueue && (
             <div className="bg-[#0f0a15] rounded-2xl">
-              {activeGame === 'catur' && <GameCatur level={gameLevel} mode="npc" myColor="w" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'uno' && <GameUno mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'ular' && <GameUlarTangga mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'spy' && <GameSpy mode="npc" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} mode="npc" myMark="X" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
+              {activeGame === 'catur' && <GameCatur level={gameLevel} mode="npc" myColor="w" onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'uno' && <GameUno mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'ular' && <GameUlarTangga mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'spy' && <GameSpy mode="npc" onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} mode="npc" myMark="X" onClose={exitGame} onMove={handleGameMove} />}
             </div>
           )}
 
@@ -977,11 +938,11 @@ export default function Home() {
               {gameMessage && (
                 <div className="bg-red-900/30 border border-red-700 text-red-300 text-xs p-2 rounded-lg mb-3 text-center">{gameMessage}</div>
               )}
-              {activeGame === 'catur' && <GameCatur mode="pvp" myColor={gameMyColor} opponentName={gameOpponent} serverFen={gameState?.fen || null} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'uno' && <GameUno mode="pvp" mySeat={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'ular' && <GameUlarTangga mode="pvp" mySeat={gameMyColor} serverState={gameState} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'spy' && <GameSpy mode="pvp" serverState={gameState} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'tictactoe' && <GameTicTacToe mode="pvp" myMark={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
+              {activeGame === 'catur' && <GameCatur mode="pvp" myColor={gameMyColor} opponentName={gameOpponent} serverFen={gameState?.fen || null} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'uno' && <GameUno mode="pvp" mySeat={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'ular' && <GameUlarTangga mode="pvp" mySeat={gameMyColor} serverState={gameState} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'spy' && <GameSpy mode="pvp" serverState={gameState} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'tictactoe' && <GameTicTacToe mode="pvp" myMark={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} />}
             </div>
           )}
         </main>
@@ -1082,26 +1043,10 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4">
+            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
               <video key={videoIndex} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => setVideoIndex(1)} loop={videoIndex === 1}>
                 <source src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} type="video/mp4" />
               </video>
-            </div>
-
-            <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4 shadow-lg">
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Moon size={16} className="text-emerald-400"/> Jadwal Sholat Hari Ini</h3>
-              {prayerTimes ? (
-                <div className="grid grid-cols-5 gap-2 text-center">
-                  {['imsak', 'subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].map((waktu) => (
-                    <div key={waktu} className="flex flex-col items-center bg-[#0f0a15] rounded-lg p-2 border border-zinc-800">
-                      <span className="text-[10px] text-zinc-400 capitalize">{waktu}</span>
-                      <span className="text-white text-xs font-bold">{prayerTimes[waktu]}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-zinc-500 text-center py-2">Memuat jadwal...</p>
-              )}
             </div>
 
             <div>
@@ -1153,10 +1098,6 @@ export default function Home() {
               {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => {
                 const isMe = m.from === username;
                 const showDate = i === 0 || dateFmt(m.ts) !== dateFmt((chatMode === "global" ? globalMsgs : privateMsgs)[i - 1].ts);
-                const themeObj = THEMES.find(t => t.id === chatBubbleColor) || THEMES[0];
-                const bubbleClass = isMe ? themeObj.color : 'bg-[#1c1c1e] text-zinc-100 rounded-tl-sm border border-zinc-700';
-                const timeClass = isMe ? 'text-white/70 text-right' : 'text-zinc-500';
-
                 return (
                   <div key={i}>
                     {showDate && (<div className="flex justify-center my-3"><span className="text-[10px] text-zinc-500 bg-[#1c1c1e] px-3 py-1 rounded-full border border-zinc-700">{dateFmt(m.ts)}</span></div>)}
@@ -1164,9 +1105,9 @@ export default function Home() {
                       {!isMe && (<div className="self-end mb-1"><UserAvatar name={m.from} avatarMap={serverAvatars} size={8} border="border-zinc-700" /></div>)}
                       <div className={`flex flex-col max-w-[78%] ${isMe ? 'items-end' : 'items-start'}`}>
                         {!isMe && chatMode === "global" && (<span className="text-[10px] text-zinc-500 mb-1 ml-1">{m.from}</span>)}
-                        <div className={`px-3 py-2 rounded-2xl text-sm break-words ${bubbleClass}`}>
+                        <div className={`px-3 py-2 rounded-2xl text-sm break-words ${isMe ? 'bg-emerald-700/80 text-white rounded-tr-sm' : 'bg-[#1c1c1e] text-zinc-100 rounded-tl-sm border border-zinc-700'}`}>
                           {m.msg}
-                          <div className={`text-[9px] mt-1 ${timeClass}`}>{timeFmt(m.ts)}</div>
+                          <div className={`text-[9px] mt-1 ${isMe ? 'text-emerald-200/70 text-right' : 'text-zinc-500'}`}>{timeFmt(m.ts)}</div>
                         </div>
                       </div>
                     </div>
@@ -1258,20 +1199,10 @@ export default function Home() {
           <div className="space-y-4">
              <h2 className="text-white font-bold text-xl mb-4">Settings</h2>
              <button onClick={() => setShowProfileModal(true)} className="w-full bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center gap-4 hover:bg-zinc-800"><User size={20} className="text-zinc-400" /><span className="text-white">Edit Profil</span></button>
-             
-             <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl">
-                <h3 className="text-white font-bold mb-3 flex items-center gap-2"><MessageSquare size={18} className="text-zinc-400"/> Warna Chat</h3>
-                <div className="flex gap-3">
-                  {THEMES.map(t => (
-                    <button key={t.id} onClick={() => changeTheme(t.id)} className={`w-8 h-8 rounded-full border-2 ${chatBubbleColor === t.id ? 'border-white scale-110' : 'border-transparent'} ${t.color.split(' ')[0]} transition-all`} />
-                  ))}
-                </div>
-             </div>
-
              <button onClick={handleLogout} className="w-full bg-red-900/20 border border-red-900/50 p-4 rounded-xl flex items-center gap-4 text-red-400 hover:bg-red-900/40"><LogOut size={20} /><span>Logout Akun</span></button>
              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mt-6">
                 <h3 className="text-white font-bold mb-2">Info Aplikasi</h3>
-                <p className="text-xs text-zinc-400">Versi: 2.1.0 (Mikasa Update)</p>
+                <p className="text-xs text-zinc-400">Versi: 2.0.0 (Mikasa Update)</p>
                 <p className="text-xs text-zinc-400">Developer: Rullzzz06</p>
              </div>
           </div>
