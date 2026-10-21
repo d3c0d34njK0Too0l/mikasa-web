@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Trophy, RotateCcw, Undo2, X, User } from "lucide-react";
+import { Award, RotateCcw, Undo2, X, User } from "lucide-react";
 import { Chess } from "chess.js";
 
 const isOver = (g) => (g.isGameOver ? g.isGameOver() : g.game_over());
