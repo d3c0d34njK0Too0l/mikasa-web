@@ -143,17 +143,17 @@ export function GameCatur({ level = "easy", onClose, mode = "npc", myColor = "w"
   let status;
   if (over) {
     if (isMate(g)) {
-      if (mode === "pvp") status = turn === myColor ? "Checkmate! You Lose" : "Checkmate! You Winn!";
-      else status = turn === "b" ? "Checkmate! You Winn" : "Checkmate! You Losee";
+      if (mode === "pvp") status = turn === myColor ? "Checkmate! You lose." : "Checkmate! You win.";
+      else status = turn === "b" ? "Checkmate! You win." : "Checkmate! You lose.";
       
       if ((mode === "npc" && turn === "b") || (mode === "pvp" && turn !== myColor)) {
         if (!hasWon) { setHasWon(true); if (onWin) onWin(); }
       }
-    } else status = "Seri!";
-  } else if (mode === "npc" && (thinking || turn === "b")) status = "NPC mikir...";
-  else if (!myTurn && mode === "pvp") status = `Menunggu ${opponentName}...`;
-  else if (checkSquare) status = "Skak! Selamatkan rajamu";
-  else status = mode === "pvp" ? `Giliranmu (${myColor === "w" ? "Putih" : "Hitam"})` : "Giliranmu (Putih)";
+    } else status = "Draw!";
+  } else if (mode === "npc" && (thinking || turn === "b")) status = "NPC is thinking...";
+  else if (!myTurn && mode === "pvp") status = `Waiting for ${opponentName}...`;
+  else if (checkSquare) status = "Check! Save your king.";
+  else status = mode === "pvp" ? `Your turn (${myColor === "w" ? "White" : "Black"})` : "Your turn (White)";
 
   useEffect(() => {
     if (mode !== "npc" || over) return;
@@ -271,22 +271,22 @@ const Btn = ({ children, className = "", ...p }) => (
   </button>
 );
 
-const UNO_COLORS = ["merah", "biru", "hijau", "kuning"];
-const UNO_BG = { merah: "bg-red-600", biru: "bg-blue-600", hijau: "bg-green-600", kuning: "bg-yellow-500", wild: "bg-gradient-to-br from-red-600 via-yellow-500 to-blue-600" };
-const UNO_DOT = { merah: "#dc2626", biru: "#2563eb", hijau: "#16a34a", kuning: "#eab308" };
+const UNO_COLORS = ["Red", "Blue", "Green", "Yellow"];
+const UNO_BG = { Red: "bg-red-600", Blue: "bg-blue-600", Green: "bg-green-600", Yellow: "bg-yellow-500", Wild: "bg-gradient-to-br from-red-600 via-yellow-500 to-blue-600" };
+const UNO_DOT = { Red: "#dc2626", Blue: "#2563eb", Green: "#16a34a", Yellow: "#eab308" };
 
 function unoCard() {
   const r = Math.random();
   const color = pick(UNO_COLORS);
-  if (r < 0.06) return { color: "wild", val: "wild" };
-  if (r < 0.1) return { color: "wild", val: "+4" };
-  if (r < 0.18) return { color, val: "skip" };
-  if (r < 0.26) return { color, val: "rev" };
+  if (r < 0.06) return { color: "Wild", val: "Wild" };
+  if (r < 0.1) return { color: "Wild", val: "+4" };
+  if (r < 0.18) return { color, val: "Skip" };
+  if (r < 0.26) return { color, val: "Reverse" };
   if (r < 0.34) return { color, val: "+2" };
   return { color, val: rand(10) };
 }
-const unoLabel = (c) => ({ skip: "⊘", rev: "⇄", wild: "WARNA" }[c.val] ?? String(c.val));
-const unoPlayable = (c, top, color) => c.color === "wild" || c.color === color || c.val === top.val;
+const unoLabel = (c) => ({ Skip: "SKIP", Reverse: "REV", Wild: "WILD" }[c.val] ?? String(c.val));
+const unoPlayable = (c, top, color) => c.color === "Wild" || c.color === color || c.val === top.val;
 const unoNext = (p, dir, n = 1) => (((p + dir * n) % 4) + 4) % 4;
 
 export function unoInit() {
@@ -300,7 +300,7 @@ export function unoInit() {
     dir: 1,
     drew: false,
     winner: null,
-    msg: "Giliranmu! Cocokkan warna atau angka.",
+    msg: "Your turn! Match the color or number.",
     npcNames: [getNpcName(), getNpcName(), getNpcName()]
   };
 }
@@ -315,24 +315,24 @@ function unoPlay(s, p, idx, chosen) {
   let dir = s.dir;
   let steps = 1;
   const notes = [];
-  const color = card.color === "wild" ? chosen : card.color;
-  if (card.val === "rev") { dir = -dir; notes.push("arah berbalik"); }
+  const color = card.color === "Wild" ? chosen : card.color;
+  if (card.val === "Reverse") { dir = -dir; notes.push("direction reversed"); }
   const victim = unoNext(p, dir);
-  if (card.val === "skip") { steps = 2; notes.push(`dilewati`); }
+  if (card.val === "Skip") { steps = 2; notes.push(`skipped`); }
   if (card.val === "+2" || card.val === "+4") {
     const n = card.val === "+2" ? 2 : 4;
     const extra = Array.from({ length: n }, () => unoCard());
     hands = hands.map((h, i) => (i === victim ? [...h, ...extra] : h));
     steps = 2;
-    notes.push(`ambil ${n} kartu`);
+    notes.push(`draw ${n} cards`);
   }
-  if (card.color === "wild") notes.push(`warna jadi ${color}`);
+  if (card.color === "Wild") notes.push(`color changed to ${color}`);
   const won = hands[p].length === 0;
   if (!won && hands[p].length === 1) notes.push("UNO!");
   
-  let msg = `Main ${card.color === "wild" ? "" : card.color + " "}${unoLabel(card)}`;
-  if (notes.length) msg += " — " + notes.join(", ");
-  if (won) msg = p === 0 ? "You Winn!!" : `WINNER!!`;
+  let msg = `Played ${card.color === "Wild" ? "" : card.color + " "}${unoLabel(card)}`;
+  if (notes.length) msg += " - " + notes.join(", ");
+  if (won) msg = p === 0 ? "YOU WIN!" : `WINNER!`;
   
   return { hands, top: card, color, dir, drew: false, winner: won ? p : null, turn: won ? p : unoNext(p, dir, steps), msg };
 }
@@ -362,18 +362,18 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
         const hand = prev.hands[p];
         const ok = hand.map((c, i) => ({ c, i })).filter(({ c }) => unoPlayable(c, prev.top, prev.color));
         if (ok.length) {
-          const plain = ok.filter(({ c }) => c.color !== "wild");
+          const plain = ok.filter(({ c }) => c.color !== "Wild");
           const { i, c } = pick(plain.length ? plain : ok);
-          const chosen = c.color === "wild" ? pick(UNO_COLORS) : null;
+          const chosen = c.color === "Wild" ? pick(UNO_COLORS) : null;
           return unoPlay(prev, p, i, chosen);
         }
         const drawn = unoCard();
         const h2 = [...hand, drawn];
         const s2 = { ...prev, hands: prev.hands.map((h, k) => (k === p ? h2 : h)) };
         if (unoPlayable(drawn, prev.top, prev.color)) {
-          return unoPlay(s2, p, h2.length - 1, drawn.color === "wild" ? pick(UNO_COLORS) : null);
+          return unoPlay(s2, p, h2.length - 1, drawn.color === "Wild" ? pick(UNO_COLORS) : null);
         }
-        return unoPass(s2, p, `ambil kartu & lewat.`);
+        return unoPass(s2, p, `drew a card & passed.`);
       });
     }, 1200);
     return () => clearTimeout(t);
@@ -389,8 +389,8 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
   const onCard = (i) => {
     if (!myTurn) return;
     const c = s.hands[mySeat][i];
-    if (!unoPlayable(c, s.top, s.color)) return setS((p) => ({ ...p, msg: "Kartu tidak cocok!" }));
-    if (c.color === "wild") return setWildIdx(i);
+    if (!unoPlayable(c, s.top, s.color)) return setS((p) => ({ ...p, msg: "Invalid card!" }));
+    if (c.color === "Wild") return setWildIdx(i);
     play(i);
   };
 
@@ -398,7 +398,7 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
     if (!myTurn || s.drew) return;
     const card = unoCard();
     const s2 = { ...s, hands: s.hands.map((h, k) => (k === mySeat ? [...h, card] : h)), drew: true };
-    const next = unoPlayable(card, s.top, s.color) ? { ...s2, msg: "Kartu cocok! Mainkan atau lewati." } : unoPass(s2, mySeat, "Tidak ada yang cocok. Giliran lewat.");
+    const next = unoPlayable(card, s.top, s.color) ? { ...s2, msg: "Card matches! Play it or pass." } : unoPass(s2, mySeat, "No match. Turn passed.");
     setS(next);
     if (onMove) onMove(next);
   };
@@ -426,22 +426,22 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
               {s.hands[n].slice(0, 8).map((_, j) => (<div key={j} className="w-6 h-10 bg-zinc-700 border border-zinc-500 rounded-sm" />))}
             </div>
             <span className={`text-[10px] mt-1 ${s.turn === n ? "text-yellow-400 font-bold" : "text-zinc-400"}`}>
-              {mode === "pvp" ? `Lawan (${s.hands[n].length})` : `${s.npcNames ? s.npcNames[n-1] : "NPC"} (${s.hands[n].length})`}
+              {mode === "pvp" ? `Opponent (${s.hands[n].length})` : `${s.npcNames ? s.npcNames[n-1] : "NPC"} (${s.hands[n].length})`}
             </span>
           </div>
         ))}
       </div>
       <div className="flex justify-center items-center gap-4 mb-2">
-        <div onClick={draw} className={`w-20 h-28 rounded-xl flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-lg bg-zinc-800 text-center leading-tight ${myTurn && !s.drew ? "cursor-pointer" : "opacity-40"}`}>Ambil</div>
+        <div onClick={draw} className={`w-20 h-28 rounded-xl flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-lg bg-zinc-800 text-center leading-tight ${myTurn && !s.drew ? "cursor-pointer" : "opacity-40"}`}>Draw</div>
         <div className={`w-20 h-28 rounded-xl flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-lg ${UNO_BG[s.color]} text-center leading-tight`}>{unoLabel(s.top)}</div>
       </div>
       <div className="flex justify-center items-center gap-2 text-xs text-zinc-400 mb-4">
         <span className="w-3 h-3 rounded-full" style={{ background: UNO_DOT[s.color] }} />
-        warna aktif: {s.color} · arah {s.dir === 1 ? "↻" : "↺"}
+        Active color: {s.color} · Direction {s.dir === 1 ? "Clockwise" : "Counter-Clockwise"}
       </div>
       {wildIdx !== null && (
         <div className="mb-3">
-          <p className="text-xs text-center text-zinc-300 mb-2">Pilih warna:</p>
+          <p className="text-xs text-center text-zinc-300 mb-2">Choose color:</p>
           <div className="grid grid-cols-4 gap-2">
             {UNO_COLORS.map((c) => (<button key={c} onClick={() => play(wildIdx, c)} className={`h-10 rounded-lg ${UNO_BG[c]}`} />))}
           </div>
@@ -451,16 +451,16 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
         {s.hands[mySeat].map((card, i) => {
           const ok = unoPlayable(card, s.top, s.color);
           return (
-            <button key={i} onClick={() => onCard(i)} className={`w-12 h-[4.5rem] rounded-lg flex items-center justify-center text-white text-lg font-bold shadow-md border-2 border-white/50 ${UNO_BG[card.color]} ${myTurn && !ok ? "opacity-40" : ""} ${myTurn && ok ? "-translate-y-1" : ""}`}>
+            <button key={i} onClick={() => onCard(i)} className={`w-12 h-[4.5rem] rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-md border-2 border-white/50 ${UNO_BG[card.color]} ${myTurn && !ok ? "opacity-40" : ""} ${myTurn && ok ? "-translate-y-1" : ""}`}>
               {unoLabel(card)}
             </button>
           );
         })}
       </div>
       {s.winner !== null ? (
-        <Btn onClick={reset}><RotateCcw size={16} /> Main lagi</Btn>
+        <Btn onClick={reset}><RotateCcw size={16} /> Play Again</Btn>
       ) : myTurn && s.drew && (
-        <Btn onClick={() => { const next = unoPass(s, mySeat, "Kamu melewati giliran."); setS(next); if(onMove) onMove(next); }}>Lewati</Btn>
+        <Btn onClick={() => { const next = unoPass(s, mySeat, "You passed."); setS(next); if(onMove) onMove(next); }}>Pass</Btn>
       )}
     </div>
   );
@@ -469,7 +469,7 @@ export function GameUno({ onClose, mode = "npc", mySeat = 0, serverState = null,
 const SNAKES = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
 const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
 const PLAYER_COLORS = ["bg-red-500", "bg-yellow-500", "bg-green-500", "bg-blue-500"];
-const DICE = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+const DICE = ["1", "2", "3", "4", "5", "6"];
 
 const cellXY = (n) => {
   const r = Math.floor((n - 1) / 10);
@@ -479,22 +479,22 @@ const cellXY = (n) => {
 };
 
 export function ularInit() {
-  return { pos: [0, 0, 0, 0], turn: 0, winner: null, msg: "Lempar dadu untuk mulai!", id: 0, npcNames: [getNpcName(), getNpcName(), getNpcName()] };
+  return { pos: [0, 0, 0, 0], turn: 0, winner: null, msg: "Roll the dice to start!", id: 0, npcNames: [getNpcName(), getNpcName(), getNpcName()] };
 }
 
 function applyRoll(s, d) {
   const p = s.turn;
   let np = s.pos[p] + d;
   if (np > 100) np = 200 - np;
-  let note = `jalan ke ${np}`;
-  if (SNAKES[np]) { note = `kena ular di ${np}, turun ke ${SNAKES[np]} 🐍`; np = SNAKES[np]; }
-  else if (LADDERS[np]) { note = `naik tangga di ${np} ke ${LADDERS[np]} 🪜`; np = LADDERS[np]; }
+  let note = `moved to ${np}`;
+  if (SNAKES[np]) { note = `hit a snake at ${np}, down to ${SNAKES[np]}`; np = SNAKES[np]; }
+  else if (LADDERS[np]) { note = `climbed a ladder at ${np} to ${LADDERS[np]}`; np = LADDERS[np]; }
   const pos = s.pos.map((v, i) => (i === p ? np : v));
   const won = np === 100;
   const extra = d === 6 && !won;
-  let msg = `Dapat ${d}, ${note}.`;
-  if (extra) msg += " Dadu 6, main lagi!";
-  if (won) msg = p === 0 ? "YOU WINN" : `WINNER`;
+  let msg = `Rolled ${d}, ${note}.`;
+  if (extra) msg += " Rolled 6, go again!";
+  if (won) msg = p === 0 ? "YOU WIN!" : `WINNER!`;
   return { pos, winner: won ? p : null, turn: won || extra ? p : (p + 1) % 4, msg, id: s.id + 1 };
 }
 
@@ -604,19 +604,19 @@ export function GameUlarTangga({ onClose, mode = "npc", mySeat = 0, serverState 
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className={`flex items-center gap-2 text-xs ${s.turn === i && s.winner === null ? "text-yellow-400 font-bold" : "text-zinc-300"}`}>
             <div className={`w-3 h-3 rounded-full ${PLAYER_COLORS[i]}`} />
-            {i === 0 ? "Kamu" : (s.npcNames ? s.npcNames[i-1] : `Player ${i+1}`)} ({s.pos[i] === 0 ? "start" : s.pos[i]})
+            {i === 0 ? "You" : (s.npcNames ? s.npcNames[i-1] : `Player ${i+1}`)} ({s.pos[i] === 0 ? "start" : s.pos[i]})
           </div>
         ))}
       </div>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-zinc-400 text-sm">Dadu:</span>
-        <span className={`text-4xl text-white ${rolling ? "opacity-70" : ""}`}>{dice === 0 ? "🎲" : DICE[dice - 1]}</span>
+        <span className="text-zinc-400 text-sm">Dice:</span>
+        <span className={`text-2xl font-bold text-white ${rolling ? "opacity-70" : ""}`}>{dice === 0 ? "-" : DICE[dice - 1]}</span>
       </div>
       {s.winner !== null ? (
-        <Btn onClick={reset}><RotateCcw size={16} /> Main lagi</Btn>
+        <Btn onClick={reset}><RotateCcw size={16} /> Play Again</Btn>
       ) : (
         <Btn disabled={(mode === "npc" ? s.turn !== 0 : s.turn !== mySeat) || rolling} onClick={rollFor}>
-          {(mode === "npc" ? s.turn === 0 : s.turn === mySeat) ? "Lempar Dadu" : "Menunggu lawan..."}
+          {(mode === "npc" ? s.turn === 0 : s.turn === mySeat) ? "Roll Dice" : "Waiting..."}
         </Btn>
       )}
     </div>
@@ -624,14 +624,14 @@ export function GameUlarTangga({ onClose, mode = "npc", mySeat = 0, serverState 
 }
 
 const SPY_PAIRS = [
-  { civ: "Apel", spy: "Mangga", ch: ["merah", "renyah", "bulat", "dingin"], sh: ["kuning", "tropis", "berserat", "lonjong"] },
-  { civ: "Kucing", spy: "Anjing", ch: ["mengeong", "licin", "tidur", "ikan"], sh: ["menggonggong", "setia", "tulang", "dilatih"] },
-  { civ: "Mobil", spy: "Motor", ch: ["pintu", "empat roda", "atap", "AC"], sh: ["helm", "dua roda", "knalpot", "gas"] },
-  { civ: "Pesawat", spy: "Helikopter", ch: ["bandara", "sayap", "tiket", "landasan"], sh: ["baling-baling", "helipad", "vertikal", "berisik"] },
-  { civ: "Buku", spy: "Majalah", ch: ["novel", "tebal", "perpustakaan", "bab"], sh: ["sampul", "bulanan", "iklan", "glossy"] },
-  { civ: "Kopi", spy: "Teh", ch: ["pahit", "kafein", "espresso", "biji"], sh: ["daun", "kantong", "hangat", "melati"] },
-  { civ: "Sepatu", spy: "Sandal", ch: ["tali", "kaos kaki", "tertutup", "olahraga"], sh: ["jepit", "santai", "terbuka", "masjid"] },
-  { civ: "Pizza", spy: "Burger", ch: ["Italia", "keju", "oven", "irisan"], sh: ["roti", "patty", "drive-thru", "saus"] },
+  { civ: "Apple", spy: "Mango", ch: ["red", "crunchy", "round", "cold"], sh: ["yellow", "tropical", "fiber", "oval"] },
+  { civ: "Cat", spy: "Dog", ch: ["meow", "sleek", "sleep", "fish"], sh: ["bark", "loyal", "bone", "trained"] },
+  { civ: "Car", spy: "Motorcycle", ch: ["door", "four wheels", "roof", "AC"], sh: ["helmet", "two wheels", "exhaust", "gas"] },
+  { civ: "Airplane", spy: "Helicopter", ch: ["airport", "wings", "ticket", "runway"], sh: ["rotor", "helipad", "vertical", "noisy"] },
+  { civ: "Book", spy: "Magazine", ch: ["novel", "thick", "library", "chapter"], sh: ["cover", "monthly", "ads", "glossy"] },
+  { civ: "Coffee", spy: "Tea", ch: ["bitter", "caffeine", "espresso", "beans"], sh: ["leaves", "bag", "warm", "jasmine"] },
+  { civ: "Shoes", spy: "Sandals", ch: ["laces", "socks", "closed", "sports"], sh: ["flip", "casual", "open", "mosque"] },
+  { civ: "Pizza", spy: "Burger", ch: ["Italy", "cheese", "oven", "slice"], sh: ["bread", "patty", "drive-thru", "sauce"] },
 ];
 
 function spyInit() {
@@ -639,7 +639,7 @@ function spyInit() {
   const spyIdx = rand(6);
   const taken = new Set();
   const npcNames = [getNpcName(), getNpcName(), getNpcName(), getNpcName(), getNpcName()];
-  const players = ["Kamu", ...npcNames].map((name, i) => {
+  const players = ["You", ...npcNames].map((name, i) => {
     const isSpy = i === spyIdx;
     const list = isSpy ? pair.sh : pair.ch;
     let hint = null;
@@ -704,17 +704,17 @@ export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = nu
     <div className="w-full">
       {g.phase === "reveal" && (
         <div className="text-center space-y-4 mt-3">
-          <p className="text-zinc-400 text-sm">Ada 1 spy yang kata rahasianya mirip tapi beda.</p>
+          <p className="text-zinc-400 text-sm">There is 1 spy whose secret word is similar but different.</p>
           <div className="bg-[#0f0a15] border border-zinc-700 rounded-xl p-4">
-            <p className="text-xs text-zinc-500 mb-2">Kata rahasiamu:</p>
+            <p className="text-xs text-zinc-500 mb-2">Your secret word:</p>
             <p className="text-3xl font-bold text-white">{me.word}</p>
           </div>
-          <Btn onClick={() => { const n = { ...g, phase: "hint" }; setG(n); if (onMove) onMove(n); }}>Lanjut kasih petunjuk</Btn>
+          <Btn onClick={() => { const n = { ...g, phase: "hint" }; setG(n); if (onMove) onMove(n); }}>Continue to give hint</Btn>
         </div>
       )}
       {g.phase === "hint" && (
         <div className="space-y-3 mt-3">
-          <p className="text-center text-sm text-zinc-400">Pilih satu petunjuk, jangan terlalu jelas!</p>
+          <p className="text-center text-sm text-zinc-400">Choose one hint, don't be too obvious!</p>
           <div className="grid grid-cols-2 gap-2">
             {me.list.map((h) => (<button key={h} onClick={() => chooseHint(h)} className="bg-[#0f0a15] border border-zinc-700 text-white p-3 rounded-xl">{h}</button>))}
           </div>
@@ -722,8 +722,8 @@ export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = nu
       )}
       {g.phase === "vote" && (
         <div className="space-y-2 mt-3">
-          <p className="text-center text-sm text-zinc-400 mb-1">Siapa yang mencurigakan?</p>
-          <div className="bg-[#0f0a15] border border-zinc-700 rounded-xl p-2 text-xs text-zinc-300 text-center mb-2">Kamu: <span className="text-white font-bold">{me.hint}</span></div>
+          <p className="text-center text-sm text-zinc-400 mb-1">Who is suspicious?</p>
+          <div className="bg-[#0f0a15] border border-zinc-700 rounded-xl p-2 text-xs text-zinc-300 text-center mb-2">You: <span className="text-white font-bold">{me.hint}</span></div>
           {g.players.slice(1).map((pl, k) => (
             <button key={pl.name} onClick={() => vote(k + 1)} className="w-full flex justify-between items-center bg-[#0f0a15] border border-zinc-700 text-white px-4 py-3 rounded-xl">
               <span>{pl.name}</span>
@@ -736,18 +736,18 @@ export function GameSpy({ onClose, mode = "npc", serverState = null, onMove = nu
         <div className="space-y-3 mt-3">
           <div className="text-center">
             <Trophy size={40} className={`mx-auto mb-1 ${iWin ? "text-yellow-500" : "text-zinc-600"}`} />
-            <p className="text-white font-bold">{iWin ? "YEAH YOU LOSE!" : "YOU WINNER!!"}</p>
-            <p className="text-xs text-zinc-400 mt-1">{g.players[r.out].name} tersingkir {spyOut ? "— SPY." : `— warga. Spy: ${g.players[spyIdx].name}.`}</p>
+            <p className="text-white font-bold">{iWin ? "You win!" : "You lose."}</p>
+            <p className="text-xs text-zinc-400 mt-1">{g.players[r.out].name} eliminated {spyOut ? "- SPY." : `- civilian. Spy was ${g.players[spyIdx].name}.`}</p>
           </div>
           <div className="bg-[#0f0a15] border border-zinc-700 rounded-xl divide-y divide-zinc-800">
             {g.players.map((pl, i) => (
               <div key={pl.name} className="flex items-center justify-between px-3 py-2 text-xs">
-                <span className={`font-bold ${i === r.out ? "text-red-400" : "text-white"}`}>{pl.name} {pl.isSpy ? "🕵️" : ""}</span>
-                <span className="text-zinc-400">{pl.word} · {r.votes[i]} suara</span>
+                <span className={`font-bold ${i === r.out ? "text-red-400" : "text-white"}`}>{pl.name} {pl.isSpy ? "(Spy)" : ""}</span>
+                <span className="text-zinc-400">{pl.word} · {r.votes[i]} votes</span>
               </div>
             ))}
           </div>
-          <Btn onClick={() => { const n = spyInit(); setG(n); setHasWon(false); if (onMove) onMove(n); }}><RotateCcw size={16} /> Main lagi</Btn>
+          <Btn onClick={() => { const n = spyInit(); setG(n); setHasWon(false); if (onMove) onMove(n); }}><RotateCcw size={16} /> Play Again</Btn>
         </div>
       )}
     </div>
@@ -861,22 +861,22 @@ export function GameTicTacToe({ level = "medium", onClose, mode = "npc", myMark 
   };
 
   let msg;
-  if (s.result === myMark) msg = "You Win this round!";
-  else if (s.result && s.result !== "Draw") msg = "opponent wins this round!";
-  else if (s.result === "Draw") msg = "Seri!";
-  else msg = s.turn === myMark ? "Giliranmu" : `Menunggu ${opponentName}...`;
+  if (s.result === myMark) msg = "You win this round!";
+  else if (s.result && s.result !== "Draw") msg = "Opponent wins this round!";
+  else if (s.result === "Draw") msg = "Draw!";
+  else msg = s.turn === myMark ? "Your turn" : `Waiting for ${opponentName}...`;
 
   const { x, o, d } = s.scores;
-  const verdict = myMark === "X" ? (x > o ? "You Winn! " : x < o ? "You lose " : "Seri!") : (o > x ? "Youu Winnn" : o < x ? "Youu lose " : "Seri!");
+  const verdict = myMark === "X" ? (x > o ? "You win!" : x < o ? "You lose." : "Draw!") : (o > x ? "You win!" : o < x ? "You lose." : "Draw!");
 
   return (
     <div className="w-full">
       <div className="flex justify-between text-sm text-zinc-300 mb-2 px-2 mt-2">
-        <span>Kamu: {myMark === "X" ? x : o}</span>
-        <span>Ronde {s.round}/10 · seri {d}</span>
+        <span>You: {myMark === "X" ? x : o}</span>
+        <span>Round {s.round}/10 · draws {d}</span>
         <span>{opponentName}: {myMark === "X" ? o : x}</span>
       </div>
-      <p className="text-xs text-center text-zinc-400 mb-3 h-4">{s.final ? "Game selesai" : msg}</p>
+      <p className="text-xs text-center text-zinc-400 mb-3 h-4">{s.final ? "Game over" : msg}</p>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {s.board.map((cell, i) => (
           <button key={i} onClick={() => click(i)} className={`w-full aspect-square border rounded-xl text-4xl font-bold flex items-center justify-center ${s.line.includes(i) ? "bg-green-900/40 border-green-500" : "bg-[#0f0a15] border-zinc-700"}`}>
@@ -887,8 +887,8 @@ export function GameTicTacToe({ level = "medium", onClose, mode = "npc", myMark 
       {s.final && (
         <div className="text-center space-y-3">
           <Trophy size={40} className="mx-auto text-yellow-500" />
-          <p className="text-white font-bold">{verdict} ({x} - {o}, seri {d})</p>
-          <Btn onClick={() => { const n = tttInit(); setS(n); setHasWon(false); if (onMove) onMove(n); }}><RotateCcw size={16} /> Main lagi</Btn>
+          <p className="text-white font-bold">{verdict} ({x} - {o}, draws {d})</p>
+          <Btn onClick={() => { const n = tttInit(); setS(n); setHasWon(false); if (onMove) onMove(n); }}><RotateCcw size={16} /> Play Again</Btn>
         </div>
       )}
     </div>
