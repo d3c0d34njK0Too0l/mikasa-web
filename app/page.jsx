@@ -11,7 +11,7 @@ import {
   Clock, Shield, Phone, Link, Mail, MapPin,
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
   Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle,
-  Swords, Package, Youtube, Image as ImageIcon, Terminal, Trophy, Star, Moon
+  Swords, Package, Youtube, Image as ImageIcon, Terminal, Award, Sparkles, Moon
 } from "lucide-react";
 
 import {
