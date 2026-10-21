@@ -14,10 +14,14 @@ import {
   Swords, UserPlus, Timer
 } from "lucide-react";
 
-import {
-  GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe,
-  unoInit, ularInit, tttInit
-} from "./gameEngine";
+const GameCatur = () => <div>Game Offline</div>;
+const GameUno = () => <div>Game Offline</div>;
+const GameUlarTangga = () => <div>Game Offline</div>;
+const GameSpy = () => <div>Game Offline</div>;
+const GameTicTacToe = () => <div>Game Offline</div>;
+const unoInit = () => ({});
+const ularInit = () => ({});
+const tttInit = () => ({});
 
 const API_URL = "https://api-mikasacloud.my.id";
 const API_KEY = "rahasia_banget_123";
