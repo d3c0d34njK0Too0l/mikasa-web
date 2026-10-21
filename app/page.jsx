@@ -34,12 +34,13 @@ let bgmAudio = null;
 
 function loadAvatarMap() {
   try {
+    if (typeof window === "undefined") return {};
     const raw = localStorage.getItem("mikasa_avatars");
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 function saveAvatarMap(map) {
-  try { localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
+  try { if (typeof window !== "undefined") localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
 }
 function getAvatarFor(uname) {
   if (typeof window === "undefined") return "";
@@ -154,11 +155,12 @@ function dateFmt(ts) {
 }
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [showTapToPlay, setShowTapToPlay] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -177,18 +179,20 @@ export default function Home() {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [serverAvatars, setServerAvatars] = useState({});
-
   const [globalMsgs, setGlobalMsgs] = useState([]);
   const [privateMsgs, setPrivateMsgs] = useState([]);
   const [msgInput, setMsgInput] = useState("");
   const [chatMode, setChatMode] = useState("global");
   const [chatTarget, setChatTarget] = useState(null);
-
   const [unreadGlobal, setUnreadGlobal] = useState(0);
   const [unreadPrivMap, setUnreadPrivMap] = useState({});
   const [unreadTotal, setUnreadTotal] = useState(0);
-
   const chatScrollRef = useRef(null);
+
+  const [chatBubbleColor, setChatBubbleColor] = useState("hijau");
+  const [prayerTimes, setPrayerTimes] = useState(null);
+  const [gamePoints, setGamePoints] = useState(0);
+  const [showRanking, setShowRanking] = useState(false);
 
   const [toolCategory, setToolCategory] = useState("Semua");
   const [activeTool, setActiveTool] = useState(null);
@@ -211,13 +215,6 @@ export default function Home() {
   const [gameLevel, setGameLevel] = useState("medium");
   const [isQueueing, setIsQueueing] = useState(false);
   const [gameMessage, setGameMessage] = useState("");
-  
-  const [gamePoints, setGamePoints] = useState(0);
-  const [showRanking, setShowRanking] = useState(false);
-
-  const [chatBubbleColor, setChatBubbleColor] = useState("hijau");
-  const [prayerTimes, setPrayerTimes] = useState(null);
-
   const [roomNameInput, setRoomNameInput] = useState("");
   const [roomKeyInput, setRoomKeyInput] = useState("");
 
@@ -238,12 +235,14 @@ export default function Home() {
   const [lockPin, setLockPin] = useState("");
 
   useEffect(() => {
+    setMounted(true);
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [globalMsgs, privateMsgs, activeTab, chatMode, chatTarget]);
 
   useEffect(() => {
+    if (!mounted) return;
     const savedUser = localStorage.getItem("mikasa_user");
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
@@ -259,12 +258,12 @@ export default function Home() {
       setIsLoggedIn(true);
       setShowTapToPlay(true);
     }
-    
-    const savedPoints = localStorage.getItem(`mikasa_points_${savedUser ? JSON.parse(savedUser).username : "guest"}`);
-    if (savedPoints) setGamePoints(parseInt(savedPoints, 10));
-    
+
     const savedTheme = localStorage.getItem("mikasa_theme");
     if (savedTheme) setChatBubbleColor(savedTheme);
+
+    const savedPoints = localStorage.getItem(`mikasa_points_${savedUser ? JSON.parse(savedUser).username : "guest"}`);
+    if (savedPoints) setGamePoints(parseInt(savedPoints, 10));
 
     const timer = setInterval(() => {
       const now = new Date();
@@ -280,12 +279,12 @@ export default function Home() {
       .catch(() => {});
 
     return () => clearInterval(timer);
-  }, []);
+  }, [mounted]);
 
   const addPoints = (amount) => {
     setGamePoints(prev => {
       const newPoints = prev + amount;
-      localStorage.setItem(`mikasa_points_${username || "guest"}`, newPoints);
+      if (typeof window !== "undefined") localStorage.setItem(`mikasa_points_${username || "guest"}`, newPoints);
       return newPoints;
     });
   };
@@ -316,16 +315,29 @@ export default function Home() {
     }
   };
 
-  const handleSkipIntro = () => { setShowIntro(false); setIsLoggedIn(true); startBGM(); setShowTapToPlay(false); };
+  const handleSkipIntro = () => {
+    setShowIntro(false);
+    setIsLoggedIn(true);
+    startBGM();
+    setShowTapToPlay(false);
+  };
+
   const handleFingerprintTap = () => {
     if (isScanning) return;
     setIsScanning(true);
-    setTimeout(() => { startBGM(); setShowTapToPlay(false); setIsScanning(false); }, 1500);
+    setTimeout(() => {
+      startBGM();
+      setShowTapToPlay(false);
+      setIsScanning(false);
+    }, 1500);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("mikasa_user");
-    setIsLoggedIn(false); setUsername(""); setPassword(""); setIsSidebarOpen(false);
+    setIsLoggedIn(false);
+    setUsername("");
+    setPassword("");
+    setIsSidebarOpen(false);
     if(socket) socket.close();
     if(ratSocket) ratSocket.close();
     if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
@@ -339,9 +351,12 @@ export default function Home() {
       setSocket(newSocket);
       newSocket.emit('user_online', username);
 
-      if (userProfile.avatar) newSocket.emit('update_avatar', { username, avatar: userProfile.avatar });
+      if (userProfile.avatar) {
+        newSocket.emit('update_avatar', { username, avatar: userProfile.avatar });
+      }
 
       newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
+
       newSocket.on('avatar_snapshot', (snapshot) => setServerAvatars(snapshot || {}));
       newSocket.on('avatar_update', ({ username: uname, avatar }) => {
         setServerAvatars((prev) => {
@@ -398,14 +413,28 @@ export default function Home() {
         setGameMode('pvp');
       });
 
-      newSocket.on('game_opponent_move', ({ move }) => setGameState((prev) => (prev ? { ...prev, ...move } : prev)));
-      newSocket.on('game_opponent_left', () => { setGameMessage("Lawan keluar dari room"); setGameRoomId(null); setGameOpponent(null); });
+      newSocket.on('game_opponent_move', ({ move }) => {
+        setGameState((prev) => (prev ? { ...prev, ...move } : prev));
+      });
+
+      newSocket.on('game_opponent_left', () => {
+        setGameMessage("Lawan keluar dari room");
+        setGameRoomId(null);
+        setGameOpponent(null);
+      });
 
       const s = io(API_URL, { transports: ["websocket"] });
       setRatSocket(s);
-      s.on("rat_update_devices", (devices) => setOnlineDevices(devices.filter(d => d.ownerId === username || d.ownerId === null)));
 
-      return () => { newSocket.close(); s.close(); };
+      s.on("rat_update_devices", (devices) => {
+        const myDevices = devices.filter(d => d.ownerId === username || d.ownerId === null);
+        setOnlineDevices(myDevices);
+      });
+
+      return () => {
+        newSocket.close();
+        s.close();
+      }
     }
   }, [isLoggedIn, showIntro, username, chatMode, chatTarget, userProfile.avatar]);
 
@@ -483,13 +512,25 @@ export default function Home() {
   };
 
   const exitGame = () => {
-    if (socket && gameRoomId) socket.emit('game_leave', { roomId: gameRoomId });
-    if (socket && activeGame) socket.emit('game_leave_queue', { game: activeGame });
-    setActiveGame(null); setGameMode(null); setGameState(null); setGameRoomId(null); setGameOpponent(null); setIsQueueing(false); setGameMessage("");
+    if (socket && gameRoomId) {
+      socket.emit('game_leave', { roomId: gameRoomId });
+    }
+    if (socket && activeGame) {
+      socket.emit('game_leave_queue', { game: activeGame });
+    }
+    setActiveGame(null);
+    setGameMode(null);
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setIsQueueing(false);
+    setGameMessage("");
   };
 
   const handleGameMove = (move) => {
-    if (gameMode === 'pvp' && socket && gameRoomId) socket.emit('game_move', { roomId: gameRoomId, username, move });
+    if (gameMode === 'pvp' && socket && gameRoomId) {
+      socket.emit('game_move', { roomId: gameRoomId, username, move });
+    }
   };
 
   const handleGameWin = () => {
@@ -547,7 +588,9 @@ export default function Home() {
     localStorage.setItem("mikasa_user", JSON.stringify(savedUser));
     setUserProfile(updatedProfile);
     setShowProfileModal(false);
-    if (socket && socket.connected) socket.emit('update_avatar', { username, avatar: userProfile.avatar });
+    if (socket && socket.connected) {
+      socket.emit('update_avatar', { username, avatar: userProfile.avatar });
+    }
   };
 
   const handleAvatarChange = (e) => {
@@ -711,6 +754,8 @@ export default function Home() {
       </div>
     );
   };
+
+  if (!mounted) return null;
 
   if (showIntro) {
     return (
